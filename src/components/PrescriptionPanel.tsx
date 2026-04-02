@@ -96,17 +96,21 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
         {/* Doctor header card */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-3 p-4">
           <div className="flex items-start gap-4">
-            {/* Logo */}
-            <div className="flex-shrink-0">
+            {/* Logo — click to open settings */}
+            <div
+              className="flex-shrink-0 cursor-pointer group"
+              onClick={onOpenSettings}
+              title="Configurações do médico"
+            >
               {doctor.logo ? (
                 <img
                   src={doctor.logo}
                   alt="Logo"
-                  className="h-14 w-auto object-contain rounded"
+                  className="h-14 w-auto object-contain rounded ring-2 ring-transparent group-hover:ring-blue-400 transition-all"
                 />
               ) : (
                 <div
-                  className="h-14 w-14 rounded-xl flex items-center justify-center text-white text-xl font-bold"
+                  className="h-14 w-14 rounded-xl flex items-center justify-center text-white text-xl font-bold ring-2 ring-transparent group-hover:ring-blue-400 transition-all"
                   style={{ backgroundColor: '#1E40AF' }}
                 >
                   {doctor.name.charAt(0).toUpperCase()}
