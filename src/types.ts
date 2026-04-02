@@ -7,6 +7,20 @@ export type Category =
   | 'cerebro'
   | 'hormonal'
   | 'imunidade'
+  | 'lipoedema'
+  | 'dislipidemia'
+  | 'diabetes'
+  | 'disposicao'
+  | 'inflamacao'
+  | 'detox'
+  | 'antiparasitario'
+  | 'desmame'
+  | 'libido'
+  | 'fertilidade'
+  | 'musculo'
+  | 'osso'
+  | 'base'
+  | 'jejum'
   | 'outro';
 
 export interface Ingredient {
@@ -14,10 +28,25 @@ export interface Ingredient {
   dose: string;
 }
 
+export type Tier = 'essencial' | 'intermediario' | 'premium';
+
+export const TIER_LABELS: Record<Tier, string> = {
+  essencial: '🟢 Essencial',
+  intermediario: '🟡 Intermediário',
+  premium: '🔴 Premium',
+};
+
+export const TIER_COLORS: Record<Tier, string> = {
+  essencial: '#22C55E',
+  intermediario: '#F59E0B',
+  premium: '#EF4444',
+};
+
 export interface Frasco {
   id: string;
   name: string;
   category: Category;
+  tier?: Tier;
   ingredients: Ingredient[];
   posology: string;
   quantity: string;
@@ -106,20 +135,48 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   intestino: '#22C55E',
   gordura: '#F97316',
   cerebro: '#EC4899',
-  hormonal: '#F59E0B',
+  hormonal: '#D946EF',
   imunidade: '#14B8A6',
+  lipoedema: '#A855F7',
+  dislipidemia: '#DC2626',
+  diabetes: '#EA580C',
+  disposicao: '#FACC15',
+  inflamacao: '#F43F5E',
+  detox: '#10B981',
+  antiparasitario: '#78716C',
+  desmame: '#7C3AED',
+  libido: '#E11D48',
+  fertilidade: '#FB7185',
+  musculo: '#0284C7',
+  osso: '#94A3B8',
+  base: '#1E40AF',
+  jejum: '#F59E0B',
   outro: '#6B7280',
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  sono: 'Sono',
-  ansiedade: 'Ansiedade',
-  tireoide: 'Tireoide',
-  intestino: 'Intestino',
-  gordura: 'Gordura',
-  cerebro: 'Cérebro',
-  hormonal: 'Hormonal',
-  imunidade: 'Imunidade',
+  sono: '🌙 Sono',
+  ansiedade: '🧘 Ansiedade',
+  tireoide: '🦋 Tireoide',
+  intestino: '🫁 Intestino',
+  gordura: '🔥 Emagrecer',
+  cerebro: '🧠 Cérebro',
+  hormonal: '⚡ Hormonal',
+  imunidade: '🛡️ Imunidade',
+  lipoedema: '💜 Lipoedema',
+  dislipidemia: '❤️ Dislipidemia',
+  diabetes: '🩸 Diabetes',
+  disposicao: '☀️ Disposição',
+  inflamacao: '🔻 Anti-Inflam.',
+  detox: '🍃 Detox',
+  antiparasitario: '🛡️ Antiparasit.',
+  desmame: '💊 Desmame',
+  libido: '🔥 Libido',
+  fertilidade: '🌸 Fertilidade',
+  musculo: '💪 Músculo',
+  osso: '🦴 Osso',
+  base: '📦 Base',
+  jejum: '☀️ Jejum',
   outro: 'Outro',
 };
 

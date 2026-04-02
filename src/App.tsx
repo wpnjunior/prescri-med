@@ -3,7 +3,7 @@ import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
-import { LayoutList, BookMarked } from 'lucide-react';
+import { LayoutList, BookMarked, FlaskConical } from 'lucide-react';
 import { AppProvider, useAppContext } from './context';
 import FrascoLibrary from './components/FrascoLibrary';
 import PrescriptionPanel from './components/PrescriptionPanel';
@@ -11,6 +11,7 @@ import AddFrascoModal from './components/AddFrascoModal';
 import DoctorSettingsModal from './components/DoctorSettingsModal';
 import FrascoManagerModal from './components/FrascoManagerModal';
 import ProtocolsModal from './components/ProtocolsModal';
+import FrascoFusionModal from './components/FrascoFusionModal';
 import type { Frasco } from './types';
 import { CATEGORY_COLORS } from './types';
 import { hasPendingCallback, getCallbackCode, clearCallbackFromUrl, exchangeToken, signPdfVidaas } from './utils/vidaas';
@@ -23,6 +24,8 @@ function AppInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [protocolsOpen, setProtocolsOpen] = useState(false);
+  const [fusionOpen, setFusionOpen] = useState(false);
+  const [fusionPreSelected, setFusionPreSelected] = useState<string[]>([]);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [vidaasStatus, setVidaasStatus] = useState<'idle' | 'signing' | 'done' | 'error'>('idle');
   const [vidaasMsg, setVidaasMsg] = useState('');
@@ -79,6 +82,10 @@ function AppInner() {
   const handleOpenAdd = () => { setEditingFrasco(null); setAddModalOpen(true); };
   const handleEditFrasco = (frasco: Frasco) => { setEditingFrasco(frasco); setAddModalOpen(true); };
   const handleCloseModal = () => { setAddModalOpen(false); setEditingFrasco(null); };
+  const handleOpenFusion = (preSelectedIds?: string[]) => {
+    setFusionPreSelected(preSelectedIds ?? []);
+    setFusionOpen(true);
+  };
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -118,6 +125,14 @@ function AppInner() {
               <span className="hidden sm:block">Gerenciar Frascos</span>
             </button>
             <button
+              onClick={() => handleOpenFusion()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors border border-emerald-500"
+              title="Fundir frascos"
+            >
+              <FlaskConical size={14} />
+              <span className="hidden sm:block">Fundir Frascos</span>
+            </button>
+            <button
               onClick={() => setProtocolsOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors border border-purple-500"
               title="Protocolos prontos"
@@ -142,7 +157,7 @@ function AppInner() {
         {/* Main layout */}
         <div className="flex flex-1 overflow-hidden">
           <div className="w-[35%] flex-shrink-0 overflow-hidden">
-            <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} />
+            <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} onOpenFusion={handleOpenFusion} />
           </div>
           <div className="flex-1 overflow-hidden">
             <PrescriptionPanel onOpenSettings={() => setSettingsOpen(true)} />
@@ -168,6 +183,7 @@ function AppInner() {
       {settingsOpen && <DoctorSettingsModal onClose={() => setSettingsOpen(false)} />}
       {managerOpen && <FrascoManagerModal onClose={() => setManagerOpen(false)} onEditFrasco={handleEditFrasco} />}
       {protocolsOpen && <ProtocolsModal onClose={() => setProtocolsOpen(false)} />}
+      <FrascoFusionModal open={fusionOpen} onClose={() => { setFusionOpen(false); setFusionPreSelected([]); }} preSelectedIds={fusionPreSelected} />
     </DndContext>
   );
 }
