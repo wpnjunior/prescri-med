@@ -9,13 +9,13 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon-32x32.png', 'favicon-16x16.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'PrescriMed',
+        name: 'PrescriMed — Dr. Wagner Novaes',
         short_name: 'PrescriMed',
-        description: 'Sistema de Prescrição em Frascos',
-        theme_color: '#1e3a5f',
-        background_color: '#ffffff',
+        description: 'Sistema de Prescrição em Frascos — Dr. Wagner Novaes Jr.',
+        theme_color: '#1a2332',
+        background_color: '#1a2332',
         display: 'standalone',
         start_url: '/prescri-med/',
         icons: [
@@ -29,6 +29,12 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'apple touch icon'
           }
         ]
       }
