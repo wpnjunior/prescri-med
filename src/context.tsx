@@ -5,11 +5,11 @@ import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loa
 import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
 // Bump this number whenever seed data changes to force refresh
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 const SEED_VERSION_KEY = 'prescri_seed_version';
 
 const DEFAULT_DOCTOR = {
-  version: 2,
+  version: 3,
   name: 'Dr. Wagner Pereira Novaes Jr.',
   crm: 'CRM-RJ 0127554-2',
   cpf: '028.026.885-88',
@@ -19,7 +19,7 @@ const DEFAULT_DOCTOR = {
   phone: '(24) 9 9989-3059',
   email: '',
   instagram: 'Dr.wagnernovaesjr',
-  logo: '',
+  logo: '/prescri-med/pwa-512x512.png',
 };
 
 function buildEmptyTimeline(): TimeSlot[] {

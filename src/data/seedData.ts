@@ -1,10 +1,14 @@
 import type { Frasco, Protocol } from '../types';
+import { FRASCOS_GROUP1 } from './frascos-group1';
+import { FRASCOS_GROUP2 } from './frascos-group2';
+import { FRASCOS_GROUP3 } from './frascos-group3';
+import { FRASCOS_GROUP4 } from './frascos-group4';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FRASCOS — 97 total: 33 jejum + 60 categorias (20x3) + 4 base
+// FRASCOS — 97 base + 300 categorias (frascos-group1..4)
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const SEED_FRASCOS: Frasco[] = [
+const BASE_FRASCOS: Frasco[] = [
 
   // ═══════════════════════════════════════════════════════════════════════════
   // JEJUM — 33 frascos (11 conceitos x 3 tiers)
@@ -1206,6 +1210,14 @@ export const SEED_FRASCOS: Frasco[] = [
     posology: '1 cápsula', quantity: '30 cápsulas', duration: '30 dias',
     instructions: 'Tomar com almoço (refeição com gordura)',
   },
+];
+
+export const SEED_FRASCOS: Frasco[] = [
+  ...BASE_FRASCOS,
+  ...FRASCOS_GROUP1,
+  ...FRASCOS_GROUP2,
+  ...FRASCOS_GROUP3,
+  ...FRASCOS_GROUP4,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
