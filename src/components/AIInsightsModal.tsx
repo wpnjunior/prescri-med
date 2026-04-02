@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Brain, Sparkles, AlertCircle, Loader2, ChevronDown, ChevronUp, Star, FlaskConical } from 'lucide-react';
+import { X, Brain, Sparkles, AlertCircle, Loader2, ChevronDown, ChevronUp, Star, FlaskConical, Utensils, Coffee, Clock, Merge } from 'lucide-react';
 import type { Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '../types';
+import { useAppContext } from '../context';
 
 interface AIInsightsModalProps {
   frasco: Frasco;
   onClose: () => void;
+  onOpenFusion?: (preSelectedIds: string[]) => void;
 }
 
 interface IngredientInsight {
@@ -17,6 +19,12 @@ interface IngredientInsight {
   observacao?: string;
 }
 
+interface FusionSuggestion {
+  frascoNome: string;
+  motivo: string;
+  sinergiaEsperada: string;
+}
+
 interface AIResult {
   resumo: string;
   indicacoes: string;
@@ -24,6 +32,10 @@ interface AIResult {
   sinergia: string;
   versoesPatentadas: string;
   cuidados: string;
+  fusoes: FusionSuggestion[];
+  alertaComida: string[];
+  melhorJejum: string[];
+  timing: string;
 }
 
 const API_KEY_STORAGE = 'prescri_gemini_key';
@@ -36,9 +48,14 @@ function saveApiKey(key: string) {
   localStorage.setItem(API_KEY_STORAGE, key);
 }
 
-async function fetchAIInsights(frasco: Frasco, apiKey: string): Promise<AIResult> {
+async function fetchAIInsights(frasco: Frasco, allFrascos: Frasco[], apiKey: string): Promise<AIResult> {
   const ingredientsList = frasco.ingredients
     .map(i => `- ${i.name}: ${i.dose}`)
+    .join('\n');
+
+  const otherFrascos = allFrascos
+    .filter(f => f.id !== frasco.id)
+    .map(f => `• "${f.name}" (${CATEGORY_LABELS[f.category]}): ${f.ingredients.map(i => i.name).join(', ')}`)
     .join('\n');
 
   const prompt = `Você é um especialista em nutrologia e farmácia de manipulação integrativa. Analise este frasco manipulado e responda em JSON.
@@ -51,6 +68,9 @@ INSTRUÇÕES: ${frasco.instructions}
 
 COMPOSIÇÃO:
 ${ingredientsList}
+
+OUTROS FRASCOS DISPONÍVEIS NA BIBLIOTECA DO MÉDICO:
+${otherFrascos || '(nenhum outro frasco disponível)'}
 
 Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
 {
@@ -68,8 +88,30 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
   ],
   "sinergia": "como os ingredientes trabalham juntos sinergicamente",
   "versoesPatentadas": "sugestões de marcas patenteadas para upgrade do frasco",
-  "cuidados": "cuidados, contraindicações ou interações importantes"
-}`;
+  "cuidados": "cuidados, contraindicações ou interações importantes",
+  "fusoes": [
+    {
+      "frascoNome": "nome EXATO de um dos frascos da biblioteca acima que seria bom fundir com este",
+      "motivo": "por que a fusão faz sentido clinicamente",
+      "sinergiaEsperada": "qual sinergia se espera dos ingredientes combinados"
+    }
+  ],
+  "alertaComida": ["lista de ingredientes DESTE frasco que são melhor absorvidos COM comida (especialmente gordura). Ex: vitaminas lipossolúveis, curcumina, CoQ10, resveratrol, astaxantina etc. Se nenhum, array vazio []"],
+  "melhorJejum": ["lista de ingredientes DESTE frasco que são melhor absorvidos EM JEJUM. Ex: aminoácidos, probióticos, glutamina, NAC, minerais quelados etc. Se nenhum, array vazio []"],
+  "timing": "recomendação geral de QUANDO tomar este frasco: jejum, com café da manhã, com almoço, à noite, antes de dormir etc. Explique o motivo."
+}
+
+IMPORTANTE sobre fusoes:
+- Sugira de 1 a 3 frascos da lista acima que combinam bem com este
+- Considere sinergias farmacológicas e clínicas reais
+- Se não houver nenhum frasco compatível, retorne array vazio []
+- Use o nome EXATO como aparece na lista
+
+IMPORTANTE sobre alertaComida e melhorJejum:
+- Analise CADA ingrediente do frasco
+- Substâncias lipossolúveis (vitaminas A, D, E, K, CoQ10, curcumina, ômega-3, astaxantina, resveratrol, pycnogenol) -> alertaComida
+- Substâncias que competem com alimentos ou são melhor em jejum (aminoácidos isolados, probióticos, glutamina, NAC, taurina, glicina, berberina, levotiroxina, ferro) -> melhorJejum
+- Um ingrediente pode aparecer em ambas as listas se houver nuance`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -95,14 +137,12 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
 
   const data = await response.json();
   const parts: any[] = data.candidates?.[0]?.content?.parts ?? [];
-  // Filtra thinking parts (thought:true) e pega só o texto da resposta
   const text = parts
     .filter((p: any) => !p.thought)
     .map((p: any) => p.text ?? '')
     .join('')
     || (parts[0]?.text ?? '');
   if (!text) throw new Error('Resposta inválida da IA');
-  // Remove markdown se ainda vier, extrai JSON
   const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
     return JSON.parse(clean) as AIResult;
@@ -113,7 +153,8 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
   }
 }
 
-export default function AIInsightsModal({ frasco, onClose }: AIInsightsModalProps) {
+export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIInsightsModalProps) {
+  const { state } = useAppContext();
   const [apiKey, setApiKey] = useState(getApiKey());
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showKeyInput, setShowKeyInput] = useState(!getApiKey());
@@ -131,7 +172,7 @@ export default function AIInsightsModal({ frasco, onClose }: AIInsightsModalProp
   const runAnalysis = async (key: string) => {
     setLoading(true); setError(null); setResult(null);
     try {
-      const res = await fetchAIInsights(frasco, key);
+      const res = await fetchAIInsights(frasco, state.frascos, key);
       setResult(res);
     } catch (e: any) {
       setError(e.message ?? 'Erro desconhecido');
@@ -147,6 +188,19 @@ export default function AIInsightsModal({ frasco, onClose }: AIInsightsModalProp
     setApiKey(key);
     setShowKeyInput(false);
     runAnalysis(key);
+  };
+
+  const findFrascoByName = (name: string): Frasco | undefined => {
+    const lower = name.toLowerCase().trim();
+    return state.frascos.find(f => f.name.toLowerCase().trim() === lower);
+  };
+
+  const handleFusionClick = (suggestedName: string) => {
+    const target = findFrascoByName(suggestedName);
+    if (target && onOpenFusion) {
+      onOpenFusion([frasco.id, target.id]);
+      onClose();
+    }
   };
 
   return (
@@ -226,16 +280,68 @@ export default function AIInsightsModal({ frasco, onClose }: AIInsightsModalProp
           {/* Results */}
           {result && (
             <div className="space-y-5">
+              {/* Resumo */}
               <div className="rounded-xl p-4" style={{ backgroundColor: catColor + '12' }}>
                 <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: catColor }}>Resumo Clínico</p>
                 <p className="text-sm text-gray-700 leading-relaxed">{result.resumo}</p>
               </div>
 
+              {/* Timing recommendation — prominent */}
+              {result.timing && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock size={15} className="text-indigo-600" />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Melhor Horário para Tomar</p>
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{result.timing}</p>
+                </div>
+              )}
+
+              {/* Food / Fasting alerts side by side */}
+              {(result.alertaComida?.length > 0 || result.melhorJejum?.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {result.alertaComida?.length > 0 && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Utensils size={14} className="text-orange-600" />
+                        <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">Melhor com Comida</p>
+                      </div>
+                      <ul className="space-y-1">
+                        {result.alertaComida.map((item, i) => (
+                          <li key={i} className="text-xs text-orange-800 flex items-start gap-1.5">
+                            <span className="text-orange-400 mt-0.5">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {result.melhorJejum?.length > 0 && (
+                    <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Coffee size={14} className="text-teal-600" />
+                        <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Melhor em Jejum</p>
+                      </div>
+                      <ul className="space-y-1">
+                        {result.melhorJejum.map((item, i) => (
+                          <li key={i} className="text-xs text-teal-800 flex items-start gap-1.5">
+                            <span className="text-teal-400 mt-0.5">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Indicações */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Indicações Clínicas</p>
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{result.indicacoes}</p>
               </div>
 
+              {/* Ingredientes */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Análise dos Ingredientes</p>
                 <div className="space-y-2">
@@ -273,16 +379,57 @@ export default function AIInsightsModal({ frasco, onClose }: AIInsightsModalProp
                 </div>
               </div>
 
+              {/* Sinergia */}
               <div className="bg-green-50 border border-green-100 rounded-xl p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-green-700 mb-1">🔗 Sinergia do Frasco</p>
                 <p className="text-sm text-gray-700 leading-relaxed">{result.sinergia}</p>
               </div>
 
+              {/* Fusion suggestions */}
+              {result.fusoes && result.fusoes.length > 0 && (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Merge size={15} className="text-purple-600" />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-purple-700">Sugestões de Fusão</p>
+                  </div>
+                  <div className="space-y-3">
+                    {result.fusoes.map((f, i) => {
+                      const targetFrasco = findFrascoByName(f.frascoNome);
+                      return (
+                        <div key={i} className="bg-white rounded-lg p-3 border border-purple-100">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <p className="text-sm font-semibold text-purple-800 flex items-center gap-1.5">
+                              <FlaskConical size={13} className="text-purple-500" />
+                              {f.frascoNome}
+                            </p>
+                            {targetFrasco && onOpenFusion && (
+                              <button
+                                onClick={() => handleFusionClick(f.frascoNome)}
+                                className="flex items-center gap-1 text-xs font-medium bg-purple-600 text-white px-2.5 py-1 rounded-lg hover:bg-purple-700 transition-colors"
+                              >
+                                <Merge size={11} /> Fundir
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600 mb-1"><span className="font-medium text-purple-700">Motivo:</span> {f.motivo}</p>
+                          <p className="text-xs text-gray-600"><span className="font-medium text-purple-700">Sinergia esperada:</span> {f.sinergiaEsperada}</p>
+                          {!targetFrasco && (
+                            <p className="text-[10px] text-gray-400 mt-1 italic">Frasco não encontrado na biblioteca</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Versões patenteadas */}
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-1">⭐ Sugestões de Marcas Patenteadas</p>
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{result.versoesPatentadas}</p>
               </div>
 
+              {/* Cuidados */}
               <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 mb-1">⚠️ Cuidados e Observações</p>
                 <p className="text-sm text-gray-700 leading-relaxed">{result.cuidados}</p>

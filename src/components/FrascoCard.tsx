@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Edit2, Trash2, Sparkles } from 'lucide-react';
+import { Edit2, Trash2, Sparkles, Shield, Star, Gem } from 'lucide-react';
 import type { Frasco } from '../types';
-import { CATEGORY_COLORS, CATEGORY_LABELS } from '../types';
+import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS } from '../types';
 import AIInsightsModal from './AIInsightsModal';
 
 interface FrascoCardProps {
   frasco: Frasco;
   onEdit: (frasco: Frasco) => void;
   onDelete: (id: string) => void;
+  onOpenFusion?: (preSelectedIds: string[]) => void;
 }
 
-export default function FrascoCard({ frasco, onEdit, onDelete }: FrascoCardProps) {
+export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: FrascoCardProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showAI, setShowAI] = useState(false);
 
@@ -37,6 +38,15 @@ export default function FrascoCard({ frasco, onEdit, onDelete }: FrascoCardProps
 
   const previewIngredients = frasco.ingredients.slice(0, 3);
 
+  const tierIcon = frasco.tier === 'premium' ? <Gem size={10} /> : frasco.tier === 'intermediario' ? <Star size={10} /> : <Shield size={10} />;
+  const tierBg = frasco.tier === 'premium'
+    ? 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200 shadow-red-100/50'
+    : frasco.tier === 'intermediario'
+    ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 shadow-amber-100/50'
+    : 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200 shadow-emerald-100/50';
+
+  const cardBg = frasco.tier ? tierBg : 'bg-white border-gray-100';
+
   return (
     <>
       <div
@@ -45,14 +55,24 @@ export default function FrascoCard({ frasco, onEdit, onDelete }: FrascoCardProps
         {...listeners}
         {...attributes}
         onContextMenu={handleContextMenu}
-        className="bg-white rounded-lg shadow-sm border border-gray-100 border-l-4 p-3 select-none hover:shadow-md transition-shadow relative group"
+        className={`rounded-lg shadow-sm border border-l-4 p-3 select-none hover:shadow-md transition-all relative group ${cardBg}`}
       >
-        {/* Category badge */}
-        <div
-          className="inline-block text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-1"
-          style={{ backgroundColor: CATEGORY_COLORS[frasco.category] }}
-        >
-          {CATEGORY_LABELS[frasco.category]}
+        {/* Category + Tier badges */}
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <div
+            className="inline-block text-white text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: CATEGORY_COLORS[frasco.category] }}
+          >
+            {CATEGORY_LABELS[frasco.category]}
+          </div>
+          {frasco.tier && (
+            <div
+              className="inline-flex items-center gap-1 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: TIER_COLORS[frasco.tier] }}
+            >
+              {tierIcon} {TIER_LABELS[frasco.tier].replace(/^[^ ]+ /, '')}
+            </div>
+          )}
         </div>
 
         {/* Name */}
@@ -131,7 +151,7 @@ export default function FrascoCard({ frasco, onEdit, onDelete }: FrascoCardProps
 
       {/* AI Insights Modal */}
       {showAI && (
-        <AIInsightsModal frasco={frasco} onClose={() => setShowAI(false)} />
+        <AIInsightsModal frasco={frasco} onClose={() => setShowAI(false)} onOpenFusion={onOpenFusion} />
       )}
     </>
   );

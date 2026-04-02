@@ -2,15 +2,11 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { AppState, AppAction, Frasco, Prescription, TimeSlot } from './types';
 import { HOURS } from './types';
 import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loadPrescription, saveProtocols, loadProtocols } from './utils/storage';
+import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
-const SAMPLE_FRASCOS: Frasco[] = [
-  { id: 'frasco-1', name: 'Frasco Sono Reparador', category: 'sono', ingredients: [{ name: 'Melatonina', dose: '5mg' }, { name: 'GABA', dose: '500mg' }, { name: 'L-Teanina', dose: '200mg' }], posology: '1 cápsula', quantity: '30 cápsulas', duration: '30 dias', instructions: 'Tomar 30 minutos antes de dormir' },
-  { id: 'frasco-2', name: 'Frasco Tireoide', category: 'tireoide', ingredients: [{ name: 'Levotiroxina', dose: '50mcg' }, { name: 'Selênio', dose: '200mcg' }, { name: 'Zinco', dose: '30mg' }], posology: '1 cápsula', quantity: '30 cápsulas', duration: '30 dias', instructions: 'Tomar em jejum' },
-  { id: 'frasco-3', name: 'Frasco Ansiedade', category: 'ansiedade', ingredients: [{ name: 'Passiflora', dose: '300mg' }, { name: 'Valeriana', dose: '150mg' }, { name: 'Magnésio', dose: '200mg' }], posology: '1 cápsula', quantity: '60 cápsulas', duration: '60 dias', instructions: 'Tomar conforme necessário' },
-  { id: 'frasco-4', name: 'Frasco Queima Gordura', category: 'gordura', ingredients: [{ name: 'L-Carnitina', dose: '500mg' }, { name: 'Picolinato de Cromo', dose: '200mcg' }, { name: 'CLA', dose: '1000mg' }], posology: '2 cápsulas', quantity: '60 cápsulas', duration: '60 dias', instructions: 'Tomar 30 min antes do treino' },
-  { id: 'frasco-5', name: 'Frasco Intestino', category: 'intestino', ingredients: [{ name: 'Lactobacillus acidophilus', dose: '5bi' }, { name: 'Bifidobacterium', dose: '3bi' }, { name: 'Glutamina', dose: '500mg' }], posology: '1 sachê', quantity: '30 sachês', duration: '30 dias', instructions: 'Diluir em água fria, tomar em jejum' },
-  { id: 'frasco-6', name: 'Frasco Neuro Performance', category: 'cerebro', ingredients: [{ name: 'Fosfatidilserina', dose: '100mg' }, { name: 'Bacopa', dose: '300mg' }, { name: 'Ômega 3', dose: '1000mg' }], posology: '1 cápsula', quantity: '60 cápsulas', duration: '60 dias', instructions: 'Tomar com refeição' },
-];
+// Bump this number whenever seed data changes to force refresh
+const SEED_VERSION = 4;
+const SEED_VERSION_KEY = 'prescri_seed_version';
 
 const DEFAULT_DOCTOR = {
   version: 2,
@@ -32,11 +28,20 @@ function buildEmptyTimeline(): TimeSlot[] {
 
 function buildInitialState(): AppState {
   const today = new Date().toISOString().slice(0, 10);
+
+  // Check seed version — if outdated or missing, use new seed data
+  const storedVersion = parseInt(localStorage.getItem(SEED_VERSION_KEY) ?? '0', 10);
+  const needsRefresh = storedVersion < SEED_VERSION;
+
+  if (needsRefresh) {
+    localStorage.setItem(SEED_VERSION_KEY, String(SEED_VERSION));
+  }
+
   return {
-    frascos: loadFrascos() ?? SAMPLE_FRASCOS,
+    frascos: needsRefresh ? SEED_FRASCOS : (loadFrascos() ?? SEED_FRASCOS),
     doctor: (() => { const d = loadDoctor(); return d?.version === DEFAULT_DOCTOR.version ? d : DEFAULT_DOCTOR; })(),
     prescription: loadPrescription() ?? { patient: { name: '', age: '', birthDate: '' }, date: today, timeline: buildEmptyTimeline() },
-    protocols: loadProtocols() ?? [],
+    protocols: needsRefresh ? SEED_PROTOCOLS : (loadProtocols() ?? SEED_PROTOCOLS),
   };
 }
 

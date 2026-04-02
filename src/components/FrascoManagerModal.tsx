@@ -9,7 +9,12 @@ interface Props {
   onEditFrasco: (f: Frasco) => void;
 }
 
-const ALL_CATS = Object.keys(CATEGORY_LABELS) as Category[];
+const ALL_CATS: Category[] = [
+  'base', 'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro', 'disposicao',
+  'imunidade', 'inflamacao', 'detox', 'lipoedema', 'dislipidemia', 'diabetes',
+  'antiparasitario', 'desmame', 'libido', 'fertilidade', 'musculo', 'osso',
+  'hormonal', 'jejum', 'outro',
+];
 
 export default function FrascoManagerModal({ onClose, onEditFrasco }: Props) {
   const { state, dispatch } = useAppContext();
