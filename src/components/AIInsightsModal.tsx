@@ -38,14 +38,14 @@ interface AIResult {
   timing: string;
 }
 
-const API_KEY_STORAGE = 'prescri_gemini_key';
+const CLAUDE_KEY_STORAGE = 'prescri_anthropic_key';
 
 function getApiKey(): string {
-  return localStorage.getItem(API_KEY_STORAGE) ?? '';
+  return localStorage.getItem(CLAUDE_KEY_STORAGE) ?? '';
 }
 
 function saveApiKey(key: string) {
-  localStorage.setItem(API_KEY_STORAGE, key);
+  localStorage.setItem(CLAUDE_KEY_STORAGE, key);
 }
 
 async function fetchAIInsights(frasco: Frasco, allFrascos: Frasco[], apiKey: string): Promise<AIResult> {
@@ -96,38 +96,30 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
       "sinergiaEsperada": "qual sinergia se espera dos ingredientes combinados"
     }
   ],
-  "alertaComida": ["lista de ingredientes DESTE frasco que são melhor absorvidos COM comida (especialmente gordura). Ex: vitaminas lipossolúveis, curcumina, CoQ10, resveratrol, astaxantina etc. Se nenhum, array vazio []"],
-  "melhorJejum": ["lista de ingredientes DESTE frasco que são melhor absorvidos EM JEJUM. Ex: aminoácidos, probióticos, glutamina, NAC, minerais quelados etc. Se nenhum, array vazio []"],
-  "timing": "recomendação geral de QUANDO tomar este frasco: jejum, com café da manhã, com almoço, à noite, antes de dormir etc. Explique o motivo."
+  "alertaComida": ["ingredientes melhor absorvidos COM comida (gordura): vitaminas lipossolúveis, curcumina, CoQ10, resveratrol, astaxantina etc. Array vazio se nenhum."],
+  "melhorJejum": ["ingredientes melhor absorvidos EM JEJUM: aminoácidos, probióticos, glutamina, NAC, taurina, glicina, berberina etc. Array vazio se nenhum."],
+  "timing": "recomendação de QUANDO tomar: jejum, café da manhã, almoço, noite, antes de dormir. Explique o motivo."
 }
 
-IMPORTANTE sobre fusoes:
-- Sugira de 1 a 3 frascos da lista acima que combinam bem com este
-- Considere sinergias farmacológicas e clínicas reais
-- Se não houver nenhum frasco compatível, retorne array vazio []
-- Use o nome EXATO como aparece na lista
+REGRAS:
+- fusoes: sugira 1 a 3 frascos da lista. Se nenhum compatível, array vazio [].
+- alertaComida/melhorJejum: analise CADA ingrediente. Um pode aparecer em ambas se houver nuance.
+- Use nomes EXATOS da lista de frascos disponíveis.`;
 
-IMPORTANTE sobre alertaComida e melhorJejum:
-- Analise CADA ingrediente do frasco
-- Substâncias lipossolúveis (vitaminas A, D, E, K, CoQ10, curcumina, ômega-3, astaxantina, resveratrol, pycnogenol) -> alertaComida
-- Substâncias que competem com alimentos ou são melhor em jejum (aminoácidos isolados, probióticos, glutamina, NAC, taurina, glicina, berberina, levotiroxina, ferro) -> melhorJejum
-- Um ingrediente pode aparecer em ambas as listas se houver nuance`;
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
-        },
-      }),
-    }
-  );
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -136,12 +128,7 @@ IMPORTANTE sobre alertaComida e melhorJejum:
   }
 
   const data = await response.json();
-  const parts: any[] = data.candidates?.[0]?.content?.parts ?? [];
-  const text = parts
-    .filter((p: any) => !p.thought)
-    .map((p: any) => p.text ?? '')
-    .join('')
-    || (parts[0]?.text ?? '');
+  const text: string = data.content?.[0]?.text ?? '';
   if (!text) throw new Error('Resposta inválida da IA');
   const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
@@ -216,7 +203,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
             </div>
             <div>
               <h2 className="text-base font-semibold text-gray-800 flex items-center gap-1">
-                <Sparkles size={14} style={{ color: catColor }} /> Análise IA — Gemini
+                <Sparkles size={14} style={{ color: catColor }} /> Análise IA — Claude
               </h2>
               <p className="text-xs text-gray-500 truncate max-w-xs">{frasco.name}</p>
             </div>
@@ -229,27 +216,31 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
 
           {/* API Key setup */}
           {showKeyInput && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-blue-700">
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 text-purple-700">
                 <Sparkles size={16} />
-                <span className="font-medium text-sm">Configure sua chave do Google Gemini</span>
+                <span className="font-medium text-sm">Configure sua chave da API Claude</span>
               </div>
-              <p className="text-xs text-blue-600">
-                Gratuito! Obtenha sua chave em{' '}
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
-                  className="underline font-medium">aistudio.google.com →</a>
+              <p className="text-xs text-purple-600">
+                Obtenha sua chave em{' '}
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer"
+                  className="underline font-medium">console.anthropic.com →</a>
+                {' '}(começa com <code className="bg-purple-100 px-1 rounded">sk-ant-</code>)
+              </p>
+              <p className="text-xs text-purple-500">
+                💡 Dica: você também pode salvar a chave nas Configurações do Médico (ícone ⚙️).
               </p>
               <div className="flex gap-2">
                 <input
                   type="password"
                   value={apiKeyInput}
                   onChange={e => setApiKeyInput(e.target.value)}
-                  placeholder="AIza..."
-                  className="flex-1 border border-blue-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="sk-ant-api03-..."
+                  className="flex-1 border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono"
                   onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
                 />
                 <button onClick={handleSaveKey}
-                  className="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800">
+                  className="px-4 py-2 bg-purple-700 text-white text-sm font-medium rounded-lg hover:bg-purple-800">
                   Analisar
                 </button>
               </div>
@@ -260,7 +251,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
           {loading && (
             <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
               <Loader2 size={32} className="animate-spin" style={{ color: catColor }} />
-              <p className="text-sm">Analisando substâncias com Gemini...</p>
+              <p className="text-sm">Analisando substâncias com Claude...</p>
             </div>
           )}
 
@@ -286,7 +277,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
                 <p className="text-sm text-gray-700 leading-relaxed">{result.resumo}</p>
               </div>
 
-              {/* Timing recommendation — prominent */}
+              {/* Timing */}
               {result.timing && (
                 <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -297,7 +288,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
                 </div>
               )}
 
-              {/* Food / Fasting alerts side by side */}
+              {/* Food / Fasting alerts */}
               {(result.alertaComida?.length > 0 || result.melhorJejum?.length > 0) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {result.alertaComida?.length > 0 && (
