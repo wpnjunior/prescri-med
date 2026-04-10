@@ -3,7 +3,7 @@ import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
-import { LayoutList, BookMarked, FlaskConical } from 'lucide-react';
+import { LayoutList, BookMarked, FlaskConical, Eye } from 'lucide-react';
 import { AppProvider, useAppContext } from './context';
 import FrascoLibrary from './components/FrascoLibrary';
 import PrescriptionPanel from './components/PrescriptionPanel';
@@ -12,6 +12,7 @@ import DoctorSettingsModal from './components/DoctorSettingsModal';
 import FrascoManagerModal from './components/FrascoManagerModal';
 import ProtocolsModal from './components/ProtocolsModal';
 import FrascoFusionModal from './components/FrascoFusionModal';
+import PanoramicViewModal from './components/PanoramicViewModal';
 import type { Frasco } from './types';
 import { CATEGORY_COLORS } from './types';
 import { hasPendingCallback, getCallbackCode, clearCallbackFromUrl, exchangeToken, signPdfVidaas } from './utils/vidaas';
@@ -26,6 +27,7 @@ function AppInner() {
   const [protocolsOpen, setProtocolsOpen] = useState(false);
   const [fusionOpen, setFusionOpen] = useState(false);
   const [fusionPreSelected, setFusionPreSelected] = useState<string[]>([]);
+  const [panoramicOpen, setPanoramicOpen] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [vidaasStatus, setVidaasStatus] = useState<'idle' | 'signing' | 'done' | 'error'>('idle');
   const [vidaasMsg, setVidaasMsg] = useState('');
@@ -117,6 +119,14 @@ function AppInner() {
           {/* Center nav buttons */}
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setPanoramicOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors border border-indigo-500"
+              title="Visão panorâmica de todos os frascos"
+            >
+              <Eye size={14} />
+              <span className="hidden sm:block">Ver Todos</span>
+            </button>
+            <button
               onClick={() => setManagerOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-700 hover:bg-blue-600 text-white rounded-lg transition-colors border border-blue-600"
               title="Gerenciar todos os frascos"
@@ -157,7 +167,7 @@ function AppInner() {
         {/* Main layout */}
         <div className="flex flex-1 overflow-hidden">
           <div className="w-[35%] flex-shrink-0 overflow-hidden">
-            <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} onOpenFusion={handleOpenFusion} />
+            <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} onOpenFusion={handleOpenFusion} onOpenPanoramic={() => setPanoramicOpen(true)} />
           </div>
           <div className="flex-1 overflow-hidden">
             <PrescriptionPanel onOpenSettings={() => setSettingsOpen(true)} />
@@ -184,6 +194,7 @@ function AppInner() {
       {managerOpen && <FrascoManagerModal onClose={() => setManagerOpen(false)} onEditFrasco={handleEditFrasco} />}
       {protocolsOpen && <ProtocolsModal onClose={() => setProtocolsOpen(false)} />}
       <FrascoFusionModal open={fusionOpen} onClose={() => { setFusionOpen(false); setFusionPreSelected([]); }} preSelectedIds={fusionPreSelected} />
+      {panoramicOpen && <PanoramicViewModal onClose={() => setPanoramicOpen(false)} onEditFrasco={handleEditFrasco} />}
     </DndContext>
   );
 }

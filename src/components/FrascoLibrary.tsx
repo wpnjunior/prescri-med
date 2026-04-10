@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Heart, Eye } from 'lucide-react';
 import type { Category, Tier, Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS } from '../types';
 import { useAppContext } from '../context';
@@ -9,6 +9,7 @@ interface FrascoLibraryProps {
   onAddFrasco: () => void;
   onEditFrasco: (frasco: Frasco) => void;
   onOpenFusion?: (preSelectedIds: string[]) => void;
+  onOpenPanoramic?: () => void;
 }
 
 const ALL_CATEGORIES: Category[] = [
@@ -20,11 +21,14 @@ const ALL_CATEGORIES: Category[] = [
 
 const ALL_TIERS: Tier[] = ['essencial', 'intermediario', 'premium'];
 
-export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion }: FrascoLibraryProps) {
+type ViewMode = 'library' | 'favorites';
+
+export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion, onOpenPanoramic }: FrascoLibraryProps) {
   const { state, dispatch } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [activeTier, setActiveTier] = useState<Tier | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('library');
 
   // Check if the active category has any frascos with tiers
   const categoryHasTiers = activeCategory
@@ -39,14 +43,26 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion 
       }, {} as Record<Tier, number>)
     : ({} as Record<Tier, number>);
 
-  const filtered = state.frascos.filter(f => {
-    const matchSearch =
-      f.name.toLowerCase().includes(search.toLowerCase()) ||
-      f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
-    const matchCat = activeCategory ? f.category === activeCategory : true;
-    const matchTier = activeTier ? f.tier === activeTier : true;
-    return matchSearch && matchCat && matchTier;
-  });
+  // Get favorite frascos
+  const favoriteFrascos = state.favorites
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(fav => state.frascos.find(f => f.id === fav.frascoId))
+    .filter((f): f is Frasco => !!f);
+
+  const filtered = viewMode === 'favorites'
+    ? favoriteFrascos.filter(f => {
+        if (!search) return true;
+        return f.name.toLowerCase().includes(search.toLowerCase()) ||
+          f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
+      })
+    : state.frascos.filter(f => {
+        const matchSearch =
+          f.name.toLowerCase().includes(search.toLowerCase()) ||
+          f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
+        const matchCat = activeCategory ? f.category === activeCategory : true;
+        const matchTier = activeTier ? f.tier === activeTier : true;
+        return matchSearch && matchCat && matchTier;
+      });
 
   const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este frasco?')) {
@@ -60,13 +76,25 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion 
       <div className="px-4 pt-4 pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-800">Biblioteca de Frascos</h2>
-          <button
-            onClick={onAddFrasco}
-            className="flex items-center gap-1 bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-800 transition-colors"
-          >
-            <Plus size={14} />
-            Novo
-          </button>
+          <div className="flex items-center gap-1.5">
+            {onOpenPanoramic && (
+              <button
+                onClick={onOpenPanoramic}
+                className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Ver todos os frascos"
+              >
+                <Eye size={14} />
+                <span className="hidden lg:inline">Ver Todos</span>
+              </button>
+            )}
+            <button
+              onClick={onAddFrasco}
+              className="flex items-center gap-1 bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-800 transition-colors"
+            >
+              <Plus size={14} />
+              Novo
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -80,42 +108,76 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion 
             className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+
+        {/* View mode toggle: Usadas / Biblioteca */}
+        <div className="flex gap-1.5 mt-2">
+          <button
+            onClick={() => { setViewMode('favorites'); setActiveCategory(null); setActiveTier(null); }}
+            className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
+              viewMode === 'favorites'
+                ? 'bg-amber-400 text-white shadow-sm'
+                : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'
+            }`}
+          >
+            <Heart size={12} fill={viewMode === 'favorites' ? 'currentColor' : 'none'} />
+            Usadas
+            {state.favorites.length > 0 && (
+              <span className={`text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ${
+                viewMode === 'favorites' ? 'bg-white text-amber-500' : 'bg-amber-200 text-amber-700'
+              }`}>
+                {state.favorites.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setViewMode('library')}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
+              viewMode === 'library'
+                ? 'bg-gray-800 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Biblioteca ({state.frascos.length})
+          </button>
+        </div>
       </div>
 
-      {/* Category filters */}
-      <div className="px-4 py-2 border-b border-gray-100 flex flex-wrap gap-1.5">
-        <button
-          onClick={() => { setActiveCategory(null); setActiveTier(null); }}
-          className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-            activeCategory === null
-              ? 'bg-gray-800 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Todos
-        </button>
-        {ALL_CATEGORIES.map(cat => {
-          const count = state.frascos.filter(f => f.category === cat).length;
-          if (count === 0) return null;
-          return (
-            <button
-              key={cat}
-              onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setActiveTier(null); }}
-              className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors`}
-              style={
-                activeCategory === cat
-                  ? { backgroundColor: CATEGORY_COLORS[cat], color: 'white' }
-                  : { backgroundColor: `${CATEGORY_COLORS[cat]}20`, color: CATEGORY_COLORS[cat] }
-              }
-            >
-              {CATEGORY_LABELS[cat]} <span className="opacity-70">({count})</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Category filters — only in library mode */}
+      {viewMode === 'library' && (
+        <div className="px-4 py-2 border-b border-gray-100 flex flex-wrap gap-1.5">
+          <button
+            onClick={() => { setActiveCategory(null); setActiveTier(null); }}
+            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+              activeCategory === null
+                ? 'bg-gray-800 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Todos
+          </button>
+          {ALL_CATEGORIES.map(cat => {
+            const count = state.frascos.filter(f => f.category === cat).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={cat}
+                onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setActiveTier(null); }}
+                className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors`}
+                style={
+                  activeCategory === cat
+                    ? { backgroundColor: CATEGORY_COLORS[cat], color: 'white' }
+                    : { backgroundColor: `${CATEGORY_COLORS[cat]}20`, color: CATEGORY_COLORS[cat] }
+                }
+              >
+                {CATEGORY_LABELS[cat]} <span className="opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Tier sub-filters — only show when a category is selected and has tiered frascos */}
-      {activeCategory && categoryHasTiers && (
+      {viewMode === 'library' && activeCategory && categoryHasTiers && (
         <div className="px-4 py-1.5 border-b border-gray-100 bg-gray-50 flex gap-1.5">
           <button
             onClick={() => setActiveTier(null)}
@@ -152,13 +214,29 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion 
       <div className="flex-1 overflow-y-auto p-3">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <p className="text-sm">Nenhum frasco encontrado</p>
-            <button
-              onClick={onAddFrasco}
-              className="mt-3 text-blue-600 text-sm hover:underline"
-            >
-              Adicionar frasco
-            </button>
+            {viewMode === 'favorites' ? (
+              <>
+                <Heart size={32} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-sm font-medium">Nenhum frasco favorito</p>
+                <p className="text-xs mt-1">Clique no <Heart size={10} className="inline" /> nos frascos para adicionar aqui</p>
+                <button
+                  onClick={() => setViewMode('library')}
+                  className="mt-3 text-amber-600 text-sm hover:underline"
+                >
+                  Ver biblioteca
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm">Nenhum frasco encontrado</p>
+                <button
+                  onClick={onAddFrasco}
+                  className="mt-3 text-blue-600 text-sm hover:underline"
+                >
+                  Adicionar frasco
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2">
