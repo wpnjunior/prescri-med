@@ -90,6 +90,20 @@ export interface Prescription {
   timeline: TimeSlot[];
 }
 
+// ── Favorites ──────────────────────────────────────────────────────────────
+export interface FavoriteEntry {
+  frascoId: string;
+  addedAt: string;
+  sortOrder: number;
+}
+
+// ── Frasco Prices ──────────────────────────────────────────────────────────
+export interface FrascoPrice {
+  frascoId: string;
+  price: number;       // BRL em centavos
+  isCustom: boolean;
+}
+
 // ── Protocols ──────────────────────────────────────────────────────────────
 export interface ProtocolEntry {
   frascoId: string;
@@ -111,6 +125,8 @@ export interface AppState {
   doctor: Doctor;
   prescription: Prescription;
   protocols: Protocol[];
+  favorites: FavoriteEntry[];
+  frascoPrices: FrascoPrice[];
 }
 
 export type AppAction =
@@ -126,7 +142,13 @@ export type AppAction =
   | { type: 'ADD_PROTOCOL'; payload: Protocol }
   | { type: 'DELETE_PROTOCOL'; payload: string }
   | { type: 'UPDATE_PROTOCOL'; payload: Protocol }
-  | { type: 'APPLY_PROTOCOL'; payload: string };
+  | { type: 'APPLY_PROTOCOL'; payload: string }
+  // ── Favorites ─────────────────────────────────────────────────────────
+  | { type: 'TOGGLE_FAVORITE'; payload: string }
+  | { type: 'REORDER_FAVORITES'; payload: FavoriteEntry[] }
+  // ── Prices ────────────────────────────────────────────────────────────
+  | { type: 'SET_FRASCO_PRICE'; payload: { frascoId: string; price: number } }
+  | { type: 'RESET_FRASCO_PRICE'; payload: string };
 
 export const CATEGORY_COLORS: Record<Category, string> = {
   sono: '#6366F1',

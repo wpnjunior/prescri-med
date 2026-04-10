@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Edit2, Trash2, Sparkles, Shield, Star, Gem } from 'lucide-react';
+import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart } from 'lucide-react';
 import type { Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS } from '../types';
+import { useAppContext } from '../context';
+import { getDefaultPrice } from '../data/defaultPrices';
 import AIInsightsModal from './AIInsightsModal';
+import SubstanceTooltip from './SubstanceTooltip';
 
 interface FrascoCardProps {
   frasco: Frasco;
@@ -14,8 +17,34 @@ interface FrascoCardProps {
 }
 
 export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: FrascoCardProps) {
+  const { state, dispatch } = useAppContext();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showAI, setShowAI] = useState(false);
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [priceInput, setPriceInput] = useState('');
+
+  const isFavorite = state.favorites.some(f => f.frascoId === frasco.id);
+  const customPrice = state.frascoPrices.find(p => p.frascoId === frasco.id);
+  const price = customPrice ? customPrice.price : getDefaultPrice(frasco);
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    dispatch({ type: 'TOGGLE_FAVORITE', payload: frasco.id });
+  };
+
+  const handlePriceClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPriceInput(price > 0 ? String(price / 100) : '');
+    setEditingPrice(true);
+  };
+
+  const handlePriceSave = () => {
+    const val = parseFloat(priceInput.replace(',', '.'));
+    if (!isNaN(val) && val > 0) {
+      dispatch({ type: 'SET_FRASCO_PRICE', payload: { frascoId: frasco.id, price: Math.round(val * 100) } });
+    }
+    setEditingPrice(false);
+  };
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: frasco.id,
@@ -81,17 +110,61 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
         {/* Preview ingredients */}
         <div className="space-y-0.5">
           {previewIngredients.map((ing, i) => (
-            <p key={i} className="text-xs text-gray-500 truncate">
-              {ing.name} {ing.dose}
-            </p>
+            <SubstanceTooltip key={i} ingredientName={ing.name}>
+              <p className="text-xs text-gray-500 truncate cursor-help">
+                {ing.name} {ing.dose}
+              </p>
+            </SubstanceTooltip>
           ))}
           {frasco.ingredients.length > 3 && (
             <p className="text-xs text-gray-400">+{frasco.ingredients.length - 3} mais...</p>
           )}
         </div>
 
+        {/* Favorite star — always visible */}
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={handleToggleFavorite}
+          className={`absolute top-2 right-2 p-1 rounded transition-all z-10 ${
+            isFavorite
+              ? 'text-amber-400 hover:text-amber-500'
+              : 'text-gray-200 hover:text-amber-300'
+          }`}
+          title={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+        >
+          <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+
+        {/* Price + ingredients bottom */}
+        {price > 0 && (
+          <div className="mt-1.5 flex items-center gap-1">
+            {editingPrice ? (
+              <input
+                type="text"
+                value={priceInput}
+                onChange={e => setPriceInput(e.target.value)}
+                onBlur={handlePriceSave}
+                onKeyDown={e => { if (e.key === 'Enter') handlePriceSave(); if (e.key === 'Escape') setEditingPrice(false); }}
+                onPointerDown={e => e.stopPropagation()}
+                className="w-20 text-xs px-1.5 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                placeholder="R$"
+                autoFocus
+              />
+            ) : (
+              <span
+                onPointerDown={e => e.stopPropagation()}
+                onClick={handlePriceClick}
+                className={`text-xs font-medium cursor-pointer hover:underline ${customPrice ? 'text-blue-600' : 'text-gray-400'}`}
+                title="Clique para editar preço"
+              >
+                ~R$ {(price / 100).toFixed(0)}{customPrice ? ' ✎' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Action buttons — visible on hover */}
-        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-8 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setShowAI(true); }}

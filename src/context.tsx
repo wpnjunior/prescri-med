@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import type { AppState, AppAction, Frasco, Prescription, TimeSlot } from './types';
+import type { AppState, AppAction, Frasco, FavoriteEntry, Prescription, TimeSlot } from './types';
 import { HOURS } from './types';
-import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loadPrescription, saveProtocols, loadProtocols } from './utils/storage';
+import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loadPrescription, saveProtocols, loadProtocols, saveFavorites, loadFavorites, saveFrascoPrices, loadFrascoPrices } from './utils/storage';
 import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
 // Bump this number whenever seed data changes to force refresh
@@ -42,6 +42,8 @@ function buildInitialState(): AppState {
     doctor: (() => { const d = loadDoctor(); return d?.version === DEFAULT_DOCTOR.version ? d : DEFAULT_DOCTOR; })(),
     prescription: loadPrescription() ?? { patient: { name: '', age: '', birthDate: '' }, date: today, timeline: buildEmptyTimeline() },
     protocols: needsRefresh ? SEED_PROTOCOLS : (loadProtocols() ?? SEED_PROTOCOLS),
+    favorites: loadFavorites() ?? [],
+    frascoPrices: loadFrascoPrices() ?? [],
   };
 }
 
@@ -103,6 +105,32 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, prescription: { ...state.prescription, timeline: filledTimeline } };
     }
 
+    // ── Favorites ─────────────────────────────────────────────────────────
+    case 'TOGGLE_FAVORITE': {
+      const frascoId = action.payload;
+      const exists = state.favorites.find(f => f.frascoId === frascoId);
+      if (exists) {
+        return { ...state, favorites: state.favorites.filter(f => f.frascoId !== frascoId) };
+      }
+      const maxOrder = state.favorites.reduce((max, f) => Math.max(max, f.sortOrder), 0);
+      const entry: FavoriteEntry = { frascoId, addedAt: new Date().toISOString(), sortOrder: maxOrder + 1 };
+      return { ...state, favorites: [...state.favorites, entry] };
+    }
+    case 'REORDER_FAVORITES':
+      return { ...state, favorites: action.payload };
+
+    // ── Prices ───────────────────────────────────────────────────────────
+    case 'SET_FRASCO_PRICE': {
+      const { frascoId, price } = action.payload;
+      const existing = state.frascoPrices.find(p => p.frascoId === frascoId);
+      if (existing) {
+        return { ...state, frascoPrices: state.frascoPrices.map(p => p.frascoId === frascoId ? { ...p, price, isCustom: true } : p) };
+      }
+      return { ...state, frascoPrices: [...state.frascoPrices, { frascoId, price, isCustom: true }] };
+    }
+    case 'RESET_FRASCO_PRICE':
+      return { ...state, frascoPrices: state.frascoPrices.filter(p => p.frascoId !== action.payload) };
+
     default:
       return state;
   }
@@ -122,6 +150,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { saveDoctor(state.doctor); }, [state.doctor]);
   useEffect(() => { savePrescription(state.prescription); }, [state.prescription]);
   useEffect(() => { saveProtocols(state.protocols); }, [state.protocols]);
+  useEffect(() => { saveFavorites(state.favorites); }, [state.favorites]);
+  useEffect(() => { saveFrascoPrices(state.frascoPrices); }, [state.frascoPrices]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
