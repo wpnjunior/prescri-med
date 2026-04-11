@@ -384,6 +384,11 @@ function PrintablePrescription({
                             {frasco.instructions}
                           </div>
                         )}
+                        {frasco.purchaseUrl && (
+                          <div style={{ fontSize: '10px', color: '#059669', marginTop: '3px', fontWeight: '600' }}>
+                            🛒 Comprar: {frasco.purchaseUrl}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

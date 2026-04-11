@@ -21,6 +21,7 @@ export type Category =
   | 'osso'
   | 'base'
   | 'jejum'
+  | 'farmacia'
   | 'outro';
 
 export interface Ingredient {
@@ -42,6 +43,8 @@ export const TIER_COLORS: Record<Tier, string> = {
   premium: '#EF4444',
 };
 
+export type FrascoSource = 'manipulado' | 'farmacia';
+
 export interface Frasco {
   id: string;
   name: string;
@@ -52,6 +55,12 @@ export interface Frasco {
   quantity: string;
   duration: string;
   instructions: string;
+  // ── Farmácia Sempre Viva fields ───────────────────────────────────────
+  source?: FrascoSource;
+  purchaseUrl?: string;
+  indicacoes?: string;
+  horarioUso?: string;
+  farmaciaCategory?: string;  // subcategoria da farmácia (Emagrecedores, Beleza, etc)
 }
 
 export interface TimeSlotEntry {
@@ -173,6 +182,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   osso: '#94A3B8',
   base: '#1E40AF',
   jejum: '#F59E0B',
+  farmacia: '#059669',
   outro: '#6B7280',
 };
 
@@ -199,6 +209,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   osso: '🦴 Osso',
   base: '📦 Base',
   jejum: '☀️ Jejum',
+  farmacia: '🏪 Farmácia',
   outro: 'Outro',
 };
 
