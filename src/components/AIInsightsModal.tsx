@@ -25,6 +25,14 @@ interface FusionSuggestion {
   sinergiaEsperada: string;
 }
 
+interface FarmaciaSuggestion {
+  produtoNome: string;
+  preco: string;
+  motivo: string;
+  substituiIngrediente: string;
+  linkCompra: string;
+}
+
 interface AIResult {
   resumo: string;
   indicacoes: string;
@@ -33,6 +41,7 @@ interface AIResult {
   versoesPatentadas: string;
   cuidados: string;
   fusoes: FusionSuggestion[];
+  farmacia: FarmaciaSuggestion[];
   alertaComida: string[];
   melhorJejum: string[];
   timing: string;
@@ -54,8 +63,16 @@ async function fetchAIInsights(frasco: Frasco, allFrascos: Frasco[], apiKey: str
     .join('\n');
 
   const otherFrascos = allFrascos
-    .filter(f => f.id !== frasco.id)
+    .filter(f => f.id !== frasco.id && f.source !== 'farmacia')
     .map(f => `• "${f.name}" (${CATEGORY_LABELS[f.category]}): ${f.ingredients.map(i => i.name).join(', ')}`)
+    .join('\n');
+
+  const farmaciaProducts = allFrascos
+    .filter(f => f.source === 'farmacia' && f.purchaseUrl)
+    .map(f => {
+      const priceInfo = f.ingredients?.[0]?.dose || '';
+      return `• "${f.name}" | ${priceInfo} | Indicações: ${f.indicacoes || 'geral'} | Link: ${f.purchaseUrl}`;
+    })
     .join('\n');
 
   const prompt = `Você é um especialista em nutrologia e farmácia de manipulação integrativa. Analise este frasco manipulado e responda em JSON.
@@ -69,8 +86,11 @@ INSTRUÇÕES: ${frasco.instructions}
 COMPOSIÇÃO:
 ${ingredientsList}
 
-OUTROS FRASCOS DISPONÍVEIS NA BIBLIOTECA DO MÉDICO:
+OUTROS FRASCOS MANIPULADOS DISPONÍVEIS NA BIBLIOTECA DO MÉDICO:
 ${otherFrascos || '(nenhum outro frasco disponível)'}
+
+PRODUTOS DA FARMÁCIA SEMPRE VIVA (prontos para compra online, mais baratos que manipulação):
+${farmaciaProducts || '(nenhum produto de farmácia disponível)'}
 
 Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
 {
@@ -91,9 +111,18 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
   "cuidados": "cuidados, contraindicações ou interações importantes",
   "fusoes": [
     {
-      "frascoNome": "nome EXATO de um dos frascos da biblioteca acima que seria bom fundir com este",
+      "frascoNome": "nome EXATO de um dos frascos manipulados da biblioteca acima que seria bom fundir com este",
       "motivo": "por que a fusão faz sentido clinicamente",
       "sinergiaEsperada": "qual sinergia se espera dos ingredientes combinados"
+    }
+  ],
+  "farmacia": [
+    {
+      "produtoNome": "nome EXATO do produto da Farmácia Sempre Viva da lista acima",
+      "preco": "preço aproximado do produto",
+      "motivo": "por que este produto da farmácia pode complementar ou substituir algum ingrediente caro deste frasco. Explique a vantagem econômica.",
+      "substituiIngrediente": "qual ingrediente do frasco este produto substitui ou complementa",
+      "linkCompra": "URL EXATA de compra do produto (copie da lista acima)"
     }
   ],
   "alertaComida": ["ingredientes melhor absorvidos COM comida (gordura): vitaminas lipossolúveis, curcumina, CoQ10, resveratrol, astaxantina etc. Array vazio se nenhum."],
@@ -102,9 +131,12 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem \`\`\`):
 }
 
 REGRAS:
-- fusoes: sugira 1 a 3 frascos da lista. Se nenhum compatível, array vazio [].
-- alertaComida/melhorJejum: analise CADA ingrediente. Um pode aparecer em ambas se houver nuance.
-- Use nomes EXATOS da lista de frascos disponíveis.`;
+- fusoes: sugira 1 a 3 frascos MANIPULADOS da lista. Se nenhum compatível, array vazio [].
+- farmacia: analise os ingredientes do frasco e veja quais podem ser SUBSTITUÍDOS ou COMPLEMENTADOS por produtos prontos da Farmácia Sempre Viva (mais baratos que manipulação). Sugira 1 a 5 produtos. Se nenhum for relevante, array vazio [].
+- PRIORIZE sugerir produtos da farmácia quando o frasco tem ingredientes caros como: CoQ10, Colágeno UC-II, 5-HTP, Ashwagandha, Ômega-3, Probióticos, Magnésio, Vitamina D3+K2, etc.
+- alertaComida/melhorJejum: analise CADA ingrediente.
+- Use nomes EXATOS das listas de frascos e produtos disponíveis.
+- Copie os links de compra EXATAMENTE como estão na lista.`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -411,6 +443,49 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Farmácia Sempre Viva suggestions */}
+              {result.farmacia && result.farmacia.length > 0 && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🏪</span>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Comprar Pronto — Farmácia Sempre Viva</p>
+                      <p className="text-[10px] text-emerald-500">Substitua ingredientes caros por produtos prontos mais baratos</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {result.farmacia.map((item, i) => (
+                      <div key={i} className="bg-white rounded-lg p-3 border border-emerald-100">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-sm font-semibold text-emerald-800 flex items-center gap-1.5">
+                            🛒 {item.produtoNome}
+                          </p>
+                          {item.preco && (
+                            <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                              {item.preco}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 mb-1">
+                          <span className="font-medium text-emerald-700">Substitui:</span> {item.substituiIngrediente}
+                        </p>
+                        <p className="text-xs text-gray-600 mb-2">{item.motivo}</p>
+                        {item.linkCompra && (
+                          <a
+                            href={item.linkCompra}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
+                          >
+                            🛒 Comprar Agora
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
