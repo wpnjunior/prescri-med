@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart, ShoppingCart, Clock, Stethoscope } from 'lucide-react';
+import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart, ShoppingCart, Clock, Stethoscope, Copy } from 'lucide-react';
 import type { Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS } from '../types';
 import { useAppContext } from '../context';
@@ -26,6 +26,16 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
   const isFavorite = state.favorites.some(f => f.frascoId === frasco.id);
   const customPrice = state.frascoPrices.find(p => p.frascoId === frasco.id);
   const price = customPrice ? customPrice.price : getDefaultPrice(frasco);
+
+  const handleDuplicate = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const duplicate: Frasco = {
+      ...frasco,
+      id: `${frasco.id}-copy-${Date.now()}`,
+      name: `${frasco.name} (cópia)`,
+    };
+    dispatch({ type: 'ADD_FRASCO', payload: duplicate });
+  };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -215,6 +225,14 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
           </button>
           <button
             onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); handleDuplicate(e); }}
+            className="p-1 rounded hover:bg-blue-50 text-gray-300 hover:text-blue-500 transition-colors"
+            title="Duplicar"
+          >
+            <Copy size={12} />
+          </button>
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onEdit(frasco); }}
             className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-blue-600 transition-colors"
             title="Editar"
@@ -245,6 +263,12 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
               onClick={() => { setShowAI(true); closeContext(); }}
             >
               <Sparkles size={14} /> Análise IA
+            </button>
+            <button
+              className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+              onClick={() => { handleDuplicate(); closeContext(); }}
+            >
+              <Copy size={14} /> Duplicar
             </button>
             <button
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
