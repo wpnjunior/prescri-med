@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { Search, Plus, Heart, Eye } from 'lucide-react';
-import type { Category, Tier, Frasco } from '../types';
+import type { Category, Tier, Frasco, FrascoSource } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS } from '../types';
 import { useAppContext } from '../context';
 import FrascoCard from './FrascoCard';
+
+const SOURCE_TABS: { key: FrascoSource | 'all'; label: string; color: string; bg: string }[] = [
+  { key: 'all', label: '📋 Todos', color: '#374151', bg: '#F3F4F6' },
+  { key: 'manipulado', label: '🧪 Manipulados', color: '#1E40AF', bg: '#DBEAFE' },
+  { key: 'farmacia', label: '🏪 Farmácia', color: '#059669', bg: '#D1FAE5' },
+  { key: 'growth', label: '💪 Growth', color: '#D97706', bg: '#FEF3C7' },
+  { key: 'doctorsfirst', label: '🩺 DoctorsFirst', color: '#0065B3', bg: '#DBEAFE' },
+];
 
 interface FrascoLibraryProps {
   onAddFrasco: () => void;
@@ -29,6 +37,7 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [activeTier, setActiveTier] = useState<Tier | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('library');
+  const [activeSource, setActiveSource] = useState<FrascoSource | 'all'>('all');
 
   // Check if the active category has any frascos with tiers
   const categoryHasTiers = activeCategory
@@ -61,7 +70,10 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
           f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
         const matchCat = activeCategory ? f.category === activeCategory : true;
         const matchTier = activeTier ? f.tier === activeTier : true;
-        return matchSearch && matchCat && matchTier;
+        const matchSource = activeSource === 'all' ? true
+          : activeSource === 'manipulado' ? (!f.source || f.source === 'manipulado')
+          : f.source === activeSource;
+        return matchSearch && matchCat && matchTier && matchSource;
       });
 
   const handleDelete = (id: string) => {
@@ -141,6 +153,34 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
           </button>
         </div>
       </div>
+
+      {/* Source tabs — only in library mode */}
+      {viewMode === 'library' && (
+        <div className="px-4 py-2 border-b border-gray-200 flex gap-1 overflow-x-auto">
+          {SOURCE_TABS.map(tab => {
+            const count = tab.key === 'all'
+              ? state.frascos.length
+              : tab.key === 'manipulado'
+              ? state.frascos.filter(f => !f.source || f.source === 'manipulado').length
+              : state.frascos.filter(f => f.source === tab.key).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => { setActiveSource(tab.key); setActiveCategory(null); setActiveTier(null); }}
+                className="text-xs px-2.5 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all flex-shrink-0"
+                style={
+                  activeSource === tab.key
+                    ? { backgroundColor: tab.color, color: 'white' }
+                    : { backgroundColor: tab.bg, color: tab.color }
+                }
+              >
+                {tab.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Category filters — only in library mode */}
       {viewMode === 'library' && (
