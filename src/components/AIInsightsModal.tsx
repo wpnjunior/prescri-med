@@ -38,14 +38,14 @@ interface AIResult {
   timing: string;
 }
 
-const CLAUDE_KEY_STORAGE = 'prescri_anthropic_key';
+const OPENAI_KEY_STORAGE = 'prescri_openai_key';
 
 function getApiKey(): string {
-  return localStorage.getItem(CLAUDE_KEY_STORAGE) ?? '';
+  return localStorage.getItem(OPENAI_KEY_STORAGE) ?? '';
 }
 
 function saveApiKey(key: string) {
-  localStorage.setItem(CLAUDE_KEY_STORAGE, key);
+  localStorage.setItem(OPENAI_KEY_STORAGE, key);
 }
 
 async function fetchAIInsights(frasco: Frasco, allFrascos: Frasco[], apiKey: string): Promise<AIResult> {
@@ -106,18 +106,19 @@ REGRAS:
 - alertaComida/melhorJejum: analise CADA ingrediente. Um pode aparecer em ambas se houver nuance.
 - Use nomes EXATOS da lista de frascos disponíveis.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'gpt-4o',
       max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: 'Você é um especialista em nutrologia e farmácia de manipulação integrativa. Responda APENAS com JSON válido, sem markdown.' },
+        { role: 'user', content: prompt },
+      ],
     }),
   });
 
@@ -128,7 +129,7 @@ REGRAS:
   }
 
   const data = await response.json();
-  const text: string = data.content?.[0]?.text ?? '';
+  const text: string = data.choices?.[0]?.message?.content ?? '';
   if (!text) throw new Error('Resposta inválida da IA');
   const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
@@ -203,7 +204,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
             </div>
             <div>
               <h2 className="text-base font-semibold text-gray-800 flex items-center gap-1">
-                <Sparkles size={14} style={{ color: catColor }} /> Análise IA — Claude
+                <Sparkles size={14} style={{ color: catColor }} /> Análise IA — ChatGPT
               </h2>
               <p className="text-xs text-gray-500 truncate max-w-xs">{frasco.name}</p>
             </div>
@@ -216,18 +217,18 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
 
           {/* API Key setup */}
           {showKeyInput && (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-purple-700">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 text-green-700">
                 <Sparkles size={16} />
-                <span className="font-medium text-sm">Configure sua chave da API Claude</span>
+                <span className="font-medium text-sm">Configure sua chave da API OpenAI (ChatGPT)</span>
               </div>
-              <p className="text-xs text-purple-600">
+              <p className="text-xs text-green-600">
                 Obtenha sua chave em{' '}
-                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer"
-                  className="underline font-medium">console.anthropic.com →</a>
-                {' '}(começa com <code className="bg-purple-100 px-1 rounded">sk-ant-</code>)
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer"
+                  className="underline font-medium">platform.openai.com →</a>
+                {' '}(começa com <code className="bg-green-100 px-1 rounded">sk-</code>)
               </p>
-              <p className="text-xs text-purple-500">
+              <p className="text-xs text-green-500">
                 💡 Dica: você também pode salvar a chave nas Configurações do Médico (ícone ⚙️).
               </p>
               <div className="flex gap-2">
@@ -235,12 +236,12 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
                   type="password"
                   value={apiKeyInput}
                   onChange={e => setApiKeyInput(e.target.value)}
-                  placeholder="sk-ant-api03-..."
-                  className="flex-1 border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono"
+                  placeholder="sk-proj-..."
+                  className="flex-1 border border-green-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 font-mono"
                   onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
                 />
                 <button onClick={handleSaveKey}
-                  className="px-4 py-2 bg-purple-700 text-white text-sm font-medium rounded-lg hover:bg-purple-800">
+                  className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
                   Analisar
                 </button>
               </div>
@@ -251,7 +252,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
           {loading && (
             <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
               <Loader2 size={32} className="animate-spin" style={{ color: catColor }} />
-              <p className="text-sm">Analisando substâncias com Claude...</p>
+              <p className="text-sm">Analisando substâncias com ChatGPT...</p>
             </div>
           )}
 
