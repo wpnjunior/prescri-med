@@ -137,8 +137,8 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
             {frasco.farmaciaCategory && (
               <p className="text-[10px] font-semibold inline-block px-1.5 py-0.5 rounded"
                 style={{
-                  color: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : '#059669',
-                  backgroundColor: frasco.source === 'growth' ? '#FEF3C7' : frasco.source === 'doctorsfirst' ? '#DBEAFE' : '#D1FAE5',
+                  color: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : frasco.source === 'custom' ? '#8B5CF6' : '#059669',
+                  backgroundColor: frasco.source === 'growth' ? '#FEF3C7' : frasco.source === 'doctorsfirst' ? '#DBEAFE' : frasco.source === 'custom' ? '#EDE9FE' : '#D1FAE5',
                 }}>
                 {frasco.farmaciaCategory}
               </p>
@@ -163,10 +163,10 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
               onClick={e => e.stopPropagation()}
               className="inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-full transition-colors"
               style={{
-                backgroundColor: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : '#059669',
+                backgroundColor: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : frasco.source === 'custom' ? '#8B5CF6' : '#059669',
               }}
             >
-              <ShoppingCart size={10} /> {frasco.source === 'growth' ? 'Comprar na Growth' : frasco.source === 'doctorsfirst' ? 'Comprar na DoctorsFirst' : 'Comprar na Farmácia'}
+              <ShoppingCart size={10} /> {frasco.source === 'growth' ? 'Comprar na Growth' : frasco.source === 'doctorsfirst' ? 'Comprar na DoctorsFirst' : frasco.source === 'custom' ? 'Comprar' : 'Comprar na Farmácia'}
             </a>
           </div>
         )}

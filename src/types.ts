@@ -43,7 +43,7 @@ export const TIER_COLORS: Record<Tier, string> = {
   premium: '#EF4444',
 };
 
-export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst';
+export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst' | 'custom';
 
 export interface Frasco {
   id: string;

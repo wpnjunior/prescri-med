@@ -13,6 +13,7 @@ import FrascoManagerModal from './components/FrascoManagerModal';
 import ProtocolsModal from './components/ProtocolsModal';
 import FrascoFusionModal from './components/FrascoFusionModal';
 import PanoramicViewModal from './components/PanoramicViewModal';
+import AddCustomProductModal from './components/AddCustomProductModal';
 import type { Frasco } from './types';
 import { CATEGORY_COLORS } from './types';
 import { hasPendingCallback, getCallbackCode, clearCallbackFromUrl, exchangeToken, signPdfVidaas } from './utils/vidaas';
@@ -28,6 +29,7 @@ function AppInner() {
   const [fusionOpen, setFusionOpen] = useState(false);
   const [fusionPreSelected, setFusionPreSelected] = useState<string[]>([]);
   const [panoramicOpen, setPanoramicOpen] = useState(false);
+  const [customProductOpen, setCustomProductOpen] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [vidaasStatus, setVidaasStatus] = useState<'idle' | 'signing' | 'done' | 'error'>('idle');
   const [vidaasMsg, setVidaasMsg] = useState('');
@@ -167,7 +169,7 @@ function AppInner() {
         {/* Main layout */}
         <div className="flex flex-1 overflow-hidden">
           <div className="w-[35%] flex-shrink-0 overflow-hidden">
-            <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} onOpenFusion={handleOpenFusion} onOpenPanoramic={() => setPanoramicOpen(true)} />
+            <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} onOpenFusion={handleOpenFusion} onOpenPanoramic={() => setPanoramicOpen(true)} onAddCustomProduct={() => setCustomProductOpen(true)} />
           </div>
           <div className="flex-1 overflow-hidden">
             <PrescriptionPanel onOpenSettings={() => setSettingsOpen(true)} />
@@ -195,6 +197,7 @@ function AppInner() {
       {protocolsOpen && <ProtocolsModal onClose={() => setProtocolsOpen(false)} />}
       <FrascoFusionModal open={fusionOpen} onClose={() => { setFusionOpen(false); setFusionPreSelected([]); }} preSelectedIds={fusionPreSelected} />
       {panoramicOpen && <PanoramicViewModal onClose={() => setPanoramicOpen(false)} onEditFrasco={handleEditFrasco} />}
+      {customProductOpen && <AddCustomProductModal onClose={() => setCustomProductOpen(false)} />}
     </DndContext>
   );
 }

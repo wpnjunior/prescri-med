@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Heart, Eye } from 'lucide-react';
+import { Search, Plus, Heart, Eye, ShoppingBag } from 'lucide-react';
 import type { Category, Tier, Frasco, FrascoSource } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS } from '../types';
 import { useAppContext } from '../context';
@@ -11,6 +11,7 @@ const SOURCE_TABS: { key: FrascoSource | 'all'; label: string; color: string; bg
   { key: 'farmacia', label: '🏪 Farmácia', color: '#059669', bg: '#D1FAE5' },
   { key: 'growth', label: '💪 Growth', color: '#D97706', bg: '#FEF3C7' },
   { key: 'doctorsfirst', label: '🩺 DoctorsFirst', color: '#0065B3', bg: '#DBEAFE' },
+  { key: 'custom', label: '🔗 Meus Produtos', color: '#8B5CF6', bg: '#EDE9FE' },
 ];
 
 interface FrascoLibraryProps {
@@ -18,6 +19,7 @@ interface FrascoLibraryProps {
   onEditFrasco: (frasco: Frasco) => void;
   onOpenFusion?: (preSelectedIds: string[]) => void;
   onOpenPanoramic?: () => void;
+  onAddCustomProduct?: () => void;
 }
 
 const ALL_CATEGORIES: Category[] = [
@@ -31,7 +33,7 @@ const ALL_TIERS: Tier[] = ['essencial', 'intermediario', 'premium'];
 
 type ViewMode = 'library' | 'favorites';
 
-export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion, onOpenPanoramic }: FrascoLibraryProps) {
+export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion, onOpenPanoramic, onAddCustomProduct }: FrascoLibraryProps) {
   const { state, dispatch } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
@@ -97,6 +99,16 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
               >
                 <Eye size={14} />
                 <span className="hidden lg:inline">Ver Todos</span>
+              </button>
+            )}
+            {onAddCustomProduct && (
+              <button
+                onClick={onAddCustomProduct}
+                className="flex items-center gap-1 bg-green-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-green-700 transition-colors"
+                title="Adicionar produto com link de compra"
+              >
+                <ShoppingBag size={14} />
+                <span className="hidden lg:inline">Link</span>
               </button>
             )}
             <button
