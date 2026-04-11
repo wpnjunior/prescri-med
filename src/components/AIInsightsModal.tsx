@@ -113,7 +113,7 @@ REGRAS:
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       max_tokens: 4096,
       messages: [
         { role: 'system', content: 'Você é um especialista em nutrologia e farmácia de manipulação integrativa. Responda APENAS com JSON válido, sem markdown.' },
