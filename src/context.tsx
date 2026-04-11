@@ -5,7 +5,7 @@ import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loa
 import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
 // Bump this number whenever seed data changes to force refresh
-const SEED_VERSION = 6;
+const SEED_VERSION = 7;
 const SEED_VERSION_KEY = 'prescri_seed_version';
 
 const DEFAULT_DOCTOR = {

@@ -6,6 +6,7 @@ import { FRASCOS_GROUP4 } from './frascos-group4';
 import { FRASCOS_FARMACIA } from './frascos-farmacia';
 import { FRASCOS_GROWTH } from './frascos-growth';
 import { FRASCOS_DOCTORSFIRST } from './frascos-doctorsfirst';
+import { SUPER_FRASCOS } from './super-frascos';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FRASCOS — 97 base + 300 categorias (frascos-group1..4)
@@ -1216,11 +1217,7 @@ const BASE_FRASCOS: Frasco[] = [
 ];
 
 export const SEED_FRASCOS: Frasco[] = [
-  ...BASE_FRASCOS,
-  ...FRASCOS_GROUP1,
-  ...FRASCOS_GROUP2,
-  ...FRASCOS_GROUP3,
-  ...FRASCOS_GROUP4,
+  ...SUPER_FRASCOS,
   ...FRASCOS_FARMACIA,
   ...FRASCOS_GROWTH,
   ...FRASCOS_DOCTORSFIRST,
