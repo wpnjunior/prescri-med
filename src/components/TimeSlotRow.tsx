@@ -57,6 +57,18 @@ export default function TimeSlotRow({ slot, frascoMap }: TimeSlotRowProps) {
               style={{ backgroundColor: CATEGORY_COLORS[frasco.category] }}
             >
               <span className="max-w-[140px] truncate">{frasco.name}</span>
+              {frasco.purchaseUrl && (
+                <a
+                  href={frasco.purchaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="ml-0.5 rounded-full hover:bg-white/30 p-0.5 flex-shrink-0 transition-colors"
+                  title="🛒 Comprar"
+                >
+                  🛒
+                </a>
+              )}
               <button
                 onClick={() => handleRemove(entry.instanceId)}
                 className="ml-0.5 rounded-full hover:bg-white/20 p-0.5 flex-shrink-0 transition-colors"

@@ -13,7 +13,7 @@ interface FrascoLibraryProps {
 }
 
 const ALL_CATEGORIES: Category[] = [
-  'base', 'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro', 'disposicao',
+  'farmacia', 'base', 'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro', 'disposicao',
   'imunidade', 'inflamacao', 'detox', 'lipoedema', 'dislipidemia', 'diabetes',
   'antiparasitario', 'desmame', 'libido', 'fertilidade', 'musculo', 'osso',
   'hormonal', 'jejum', 'outro',

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart } from 'lucide-react';
+import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart, ShoppingCart, Clock, Stethoscope } from 'lucide-react';
 import type { Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS } from '../types';
 import { useAppContext } from '../context';
@@ -120,6 +120,41 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
             <p className="text-xs text-gray-400">+{frasco.ingredients.length - 3} mais...</p>
           )}
         </div>
+
+        {/* Farmácia fields: indicações, horário, subcategoria, link */}
+        {frasco.source === 'farmacia' && (
+          <div className="mt-1.5 space-y-1 border-t border-gray-100 pt-1.5">
+            {frasco.farmaciaCategory && (
+              <p className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 inline-block px-1.5 py-0.5 rounded">
+                {frasco.farmaciaCategory}
+              </p>
+            )}
+            {frasco.indicacoes && (
+              <div className="flex items-start gap-1">
+                <Stethoscope size={10} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                <p className="text-[10px] text-gray-500 leading-tight">{frasco.indicacoes}</p>
+              </div>
+            )}
+            {frasco.horarioUso && (
+              <div className="flex items-center gap-1">
+                <Clock size={10} className="text-blue-400 flex-shrink-0" />
+                <p className="text-[10px] text-blue-600 font-medium">{frasco.horarioUso}</p>
+              </div>
+            )}
+            {frasco.purchaseUrl && (
+              <a
+                href={frasco.purchaseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2 py-1 rounded-full transition-colors"
+              >
+                <ShoppingCart size={10} /> Comprar na Farmácia
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Favorite star — always visible */}
         <button
