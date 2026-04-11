@@ -121,11 +121,15 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
           )}
         </div>
 
-        {/* Farmácia fields: indicações, horário, subcategoria, link */}
-        {frasco.source === 'farmacia' && (
+        {/* Store fields: indicações, horário, subcategoria, link — for any product with purchaseUrl */}
+        {frasco.purchaseUrl && (
           <div className="mt-1.5 space-y-1 border-t border-gray-100 pt-1.5">
             {frasco.farmaciaCategory && (
-              <p className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 inline-block px-1.5 py-0.5 rounded">
+              <p className="text-[10px] font-semibold inline-block px-1.5 py-0.5 rounded"
+                style={{
+                  color: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : '#059669',
+                  backgroundColor: frasco.source === 'growth' ? '#FEF3C7' : frasco.source === 'doctorsfirst' ? '#DBEAFE' : '#D1FAE5',
+                }}>
                 {frasco.farmaciaCategory}
               </p>
             )}
@@ -141,18 +145,19 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
                 <p className="text-[10px] text-blue-600 font-medium">{frasco.horarioUso}</p>
               </div>
             )}
-            {frasco.purchaseUrl && (
-              <a
-                href={frasco.purchaseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onPointerDown={e => e.stopPropagation()}
-                onClick={e => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2 py-1 rounded-full transition-colors"
-              >
-                <ShoppingCart size={10} /> Comprar na Farmácia
-              </a>
-            )}
+            <a
+              href={frasco.purchaseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-full transition-colors"
+              style={{
+                backgroundColor: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : '#059669',
+              }}
+            >
+              <ShoppingCart size={10} /> {frasco.source === 'growth' ? 'Comprar na Growth' : frasco.source === 'doctorsfirst' ? 'Comprar na DoctorsFirst' : 'Comprar na Farmácia'}
+            </a>
           </div>
         )}
 
