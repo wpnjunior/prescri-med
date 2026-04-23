@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Settings, FileDown, RotateCcw, User, Calendar, Clock, ShieldCheck } from 'lucide-react';
+import { Settings, FileDown, RotateCcw, User, Calendar, Clock, ShieldCheck, Save, History, Check } from 'lucide-react';
 import type { Frasco, Patient } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, formatHour, HOURS } from '../types';
 import { useAppContext } from '../context';
 import Timeline from './Timeline';
 import { exportToPDF } from '../utils/pdf';
 import VidaasModal from './VidaasModal';
+import PrescriptionHistoryModal from './PrescriptionHistoryModal';
 
 interface PrescriptionPanelProps {
   onOpenSettings: () => void;
@@ -17,6 +18,8 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
   const [patientForm, setPatientForm] = useState<Patient>(state.prescription.patient);
   const [exporting, setExporting] = useState(false);
   const [vidaasOpen, setVidaasOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
 
   const frascoMap: Record<string, Frasco> = {};
   state.frascos.forEach(f => { frascoMap[f.id] = f; });
@@ -26,11 +29,21 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
     setEditingPatient(false);
   };
 
+  const handleSavePrescription = () => {
+    dispatch({ type: 'SAVE_PRESCRIPTION' });
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 2000);
+  };
+
   const handleNewPrescription = () => {
-    if (window.confirm('Iniciar nova prescrição? Os dados atuais serão perdidos.')) {
-      dispatch({ type: 'NEW_PRESCRIPTION' });
-      setPatientForm({ name: '', age: '', birthDate: '' });
+    const hasContent = state.prescription.timeline.some(s => s.entries.length > 0);
+    if (hasContent) {
+      if (window.confirm('Salvar a prescrição atual antes de criar uma nova?')) {
+        dispatch({ type: 'SAVE_PRESCRIPTION' });
+      }
     }
+    dispatch({ type: 'NEW_PRESCRIPTION' });
+    setPatientForm({ name: '', age: '', birthDate: '' });
   };
 
   const handleExport = async () => {
@@ -65,14 +78,37 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
             onClick={handleNewPrescription}
             className="flex items-center gap-1.5 text-xs text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <RotateCcw size={13} /> Nova Prescrição
+            <RotateCcw size={13} /> Nova
+          </button>
+          <button
+            onClick={handleSavePrescription}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${
+              saveFlash
+                ? 'bg-green-500 text-white'
+                : 'bg-amber-500 text-white hover:bg-amber-600'
+            }`}
+            title="Salvar prescrição no histórico"
+          >
+            {saveFlash ? <><Check size={13} /> Salvo!</> : <><Save size={13} /> Salvar</>}
+          </button>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium bg-gray-700 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+            title="Ver prescrições salvas"
+          >
+            <History size={13} /> Histórico
+            {state.savedPrescriptions.length > 0 && (
+              <span className="bg-white text-gray-700 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {state.savedPrescriptions.length}
+              </span>
+            )}
           </button>
           <button
             onClick={handleExport}
             disabled={exporting}
             className="flex items-center gap-1.5 text-xs font-medium bg-blue-700 text-white px-3 py-1.5 rounded-lg hover:bg-blue-800 disabled:opacity-60 transition-colors"
           >
-            <FileDown size={13} /> {exporting ? 'Gerando PDF...' : 'Exportar PDF'}
+            <FileDown size={13} /> {exporting ? 'Gerando...' : 'PDF'}
           </button>
           <button
             onClick={() => setVidaasOpen(true)}
@@ -256,6 +292,9 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
           onStartAuth={() => setVidaasOpen(false)}
         />
       )}
+
+      {/* History Modal */}
+      {historyOpen && <PrescriptionHistoryModal onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }

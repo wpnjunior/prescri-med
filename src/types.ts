@@ -128,6 +128,18 @@ export interface Protocol {
   createdAt: string;
 }
 
+// ── Saved Prescriptions (History) ──────────────────────────────────────────
+export interface SavedPrescription {
+  id: string;
+  patient: Patient;
+  date: string;
+  timeline: TimeSlot[];
+  savedAt: string;        // ISO timestamp
+  updatedAt: string;      // ISO timestamp
+  frascoCount: number;    // total frascos used (for display)
+  slotCount: number;      // total slots filled (for display)
+}
+
 // ── App State ───────────────────────────────────────────────────────────────
 export interface AppState {
   frascos: Frasco[];
@@ -136,6 +148,7 @@ export interface AppState {
   protocols: Protocol[];
   favorites: FavoriteEntry[];
   frascoPrices: FrascoPrice[];
+  savedPrescriptions: SavedPrescription[];
 }
 
 export type AppAction =
@@ -157,7 +170,11 @@ export type AppAction =
   | { type: 'REORDER_FAVORITES'; payload: FavoriteEntry[] }
   // ── Prices ────────────────────────────────────────────────────────────
   | { type: 'SET_FRASCO_PRICE'; payload: { frascoId: string; price: number } }
-  | { type: 'RESET_FRASCO_PRICE'; payload: string };
+  | { type: 'RESET_FRASCO_PRICE'; payload: string }
+  // ── Prescription History ──────────────────────────────────────────────
+  | { type: 'SAVE_PRESCRIPTION' }
+  | { type: 'LOAD_PRESCRIPTION'; payload: string }
+  | { type: 'DELETE_SAVED_PRESCRIPTION'; payload: string };
 
 export const CATEGORY_COLORS: Record<Category, string> = {
   sono: '#6366F1',
