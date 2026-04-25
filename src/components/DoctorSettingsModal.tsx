@@ -2,8 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, Trash2, Sparkles, Eye, EyeOff } from 'lucide-react';
 import type { Doctor } from '../types';
 import { useAppContext } from '../context';
-
-const API_KEY_STORAGE = 'prescri_anthropic_key';
+import { getAIKey, saveAIKey, clearAIKey, detectProvider } from '../utils/aiClient';
 
 interface DoctorSettingsModalProps {
   onClose: () => void;
@@ -12,7 +11,7 @@ interface DoctorSettingsModalProps {
 export default function DoctorSettingsModal({ onClose }: DoctorSettingsModalProps) {
   const { state, dispatch } = useAppContext();
   const [form, setForm] = useState<Doctor>({ ...state.doctor });
-  const [apiKey, setApiKey] = useState(localStorage.getItem(API_KEY_STORAGE) ?? '');
+  const [apiKey, setApiKey] = useState(getAIKey());
   const [showKey, setShowKey] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -28,8 +27,8 @@ export default function DoctorSettingsModal({ onClose }: DoctorSettingsModalProp
 
   const handleSave = () => {
     dispatch({ type: 'UPDATE_DOCTOR', payload: form });
-    if (apiKey.trim()) localStorage.setItem(API_KEY_STORAGE, apiKey.trim());
-    else localStorage.removeItem(API_KEY_STORAGE);
+    if (apiKey.trim()) saveAIKey(apiKey.trim());
+    else clearAIKey();
     onClose();
   };
 
@@ -107,18 +106,18 @@ export default function DoctorSettingsModal({ onClose }: DoctorSettingsModalProp
             </div>
           ))}
 
-          {/* API Key IA */}
+          {/* API Key IA — multi-provider */}
           <div className="pt-2 border-t border-gray-100">
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
               <Sparkles size={14} className="text-purple-600" />
-              Chave API — Análise IA (Claude)
+              Chave API — IA (qualquer provedor)
             </label>
             <div className="relative">
               <input
                 type={showKey ? 'text' : 'password'}
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
-                placeholder="sk-ant-api03-..."
+                placeholder="sk-ant-..., sk-..., AIza... ou gsk_..."
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
               />
               <button
@@ -129,15 +128,21 @@ export default function DoctorSettingsModal({ onClose }: DoctorSettingsModalProp
                 {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Obtenha em{' '}
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer"
-                className="text-purple-600 underline hover:text-purple-700">
-                console.anthropic.com
-              </a>
-              {' '}— necessária para o botão ✨ nos frascos.
-            </p>
-            {apiKey && <p className="text-xs text-green-600 mt-1 font-medium">✅ Chave configurada</p>}
+            {apiKey && (() => {
+              const det = detectProvider(apiKey);
+              return (
+                <p className={`text-xs mt-1 font-medium ${det.valid ? 'text-green-600' : 'text-orange-600'}`}>
+                  {det.valid ? `✅ Detectado: ${det.label}` : `⚠️ ${det.label}`}
+                </p>
+              );
+            })()}
+            <div className="text-[11px] text-gray-500 mt-2 space-y-0.5">
+              <p className="font-medium text-gray-600">Provedores aceitos:</p>
+              <p>• <strong>Claude</strong> (sk-ant-...) — <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="text-purple-600 underline">anthropic.com</a></p>
+              <p>• <strong>OpenAI</strong> (sk-...) — <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-purple-600 underline">openai.com</a></p>
+              <p>• <strong>Gemini</strong> (AIza...) — <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-purple-600 underline">aistudio.google.com</a></p>
+              <p>• <strong>Groq</strong> (gsk_...) — <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="text-purple-600 underline">console.groq.com</a> (grátis e rápido)</p>
+            </div>
           </div>
         </div>
 

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import {
   X, Link as LinkIcon, ShoppingBag, Plus, Trash2, Package,
   ClipboardPaste, FlaskConical, FileText, Sparkles, Check, AlertCircle,
+  Wand2, Loader2,
 } from 'lucide-react';
 import type { Category, FrascoSource, Frasco, Ingredient } from '../types';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '../types';
 import { useAppContext } from '../context';
+import { callAIJson, getAIKey, promptForKey, detectProvider } from '../utils/aiClient';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const STORE_OPTIONS: { key: FrascoSource; label: string; color: string; bg: string; icon: string }[] = [
@@ -30,7 +32,52 @@ const TABS: { key: TabMode; label: string; icon: React.ReactNode; color: string;
   { key: 'manual', label: 'Manual',        icon: <FileText size={16} />,      color: '#3B82F6', desc: 'Preencha campo por campo' },
 ];
 
-// ── Ingredient parser ──────────────────────────────────────────────────────
+// ── AI-powered parser (multi-provider via aiClient) ────────────────────────
+interface AIFrascoResult {
+  name: string;
+  ingredients: Ingredient[];
+  posology?: string;
+  quantity?: string;
+  duration?: string;
+  category?: Category;
+}
+
+async function analyzeWithAI(text: string): Promise<AIFrascoResult> {
+  const userPrompt = `Analise o texto abaixo que descreve um frasco manipulado / suplemento e extraia as informações em JSON válido.
+
+TEXTO:
+"""
+${text}
+"""
+
+Retorne APENAS um JSON (sem markdown, sem comentários) no formato:
+{
+  "name": "nome do frasco (se encontrar, senão use o primeiro ingrediente + 'Composto')",
+  "ingredients": [
+    { "name": "Nome da substância", "dose": "dose com unidade (ex: 500mg, 10.000UI, 2g)" }
+  ],
+  "posology": "posologia sugerida (ex: '1 cápsula ao dia em jejum') ou vazio se não mencionado",
+  "quantity": "quantidade do frasco (ex: '30 cápsulas') ou vazio",
+  "duration": "duração (ex: '30 dias') ou vazio",
+  "category": "uma destas: sono, ansiedade, tireoide, intestino, gordura, cerebro, hormonal, imunidade, lipoedema, dislipidemia, diabetes, disposicao, inflamacao, detox, antiparasitario, desmame, libido, fertilidade, musculo, osso, base, jejum, outro"
+}
+
+REGRAS:
+- Extraia TODAS as substâncias, mesmo se formato estranho (com dois pontos, traços, tabs, misturadas, sem separador claro).
+- Preserve nomes técnicos: "L-Glutamina", "Magnésio Bisglicinato", "Vitamina D3", "5-HTP", etc.
+- Doses: mantenha unidade original (mg, g, UI, mcg, µg, bilhões UFC).
+- Se houver fracionamento/teor (ex: "cada cápsula contém"), ignore esse ruído.
+- Se o texto tem "take 1 daily" ou similar, extraia pra posology.
+- Se não conseguir identificar categoria, use "outro".`;
+
+  return callAIJson<AIFrascoResult>({
+    systemPrompt: 'Você é um especialista em farmácia de manipulação. Extrai dados estruturados de fórmulas com precisão.',
+    userPrompt,
+    maxTokens: 2048,
+  });
+}
+
+// ── Ingredient parser (regex fallback) ─────────────────────────────────────
 function parseIngredients(text: string): Ingredient[] {
   const lines = text
     .split(/\n/)
@@ -117,6 +164,8 @@ export default function AddCustomProductModal({ onClose }: Props) {
   const [parsedIngredients, setParsedIngredients] = useState<Ingredient[]>([]);
   const [frascoParsed, setFrascoParsed] = useState(false);
   const [frascoSaved, setFrascoSaved] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // ── Manual tab state ───────────────────────────────────────────────────
   const [manName, setManName] = useState('');
@@ -166,6 +215,31 @@ export default function AddCustomProductModal({ onClose }: Props) {
       if (parsed.length > 0 && parsed[0].name === extractedName && !parsed[0].dose) {
         setParsedIngredients(parsed.slice(1));
       }
+    }
+  };
+
+  const handleAnalyzeAI = async () => {
+    if (!frascoText.trim()) { alert('Cole o texto do frasco primeiro'); return; }
+    let key = getAIKey();
+    if (!key) {
+      key = promptForKey();
+      if (!key) return;
+    }
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const result = await analyzeWithAI(frascoText);
+      setParsedIngredients(result.ingredients || []);
+      setFrascoParsed(true);
+      if (result.name && !frascoName) setFrascoName(result.name);
+      if (result.posology) setFrascoPosology(result.posology);
+      if (result.quantity) setFrascoQuantity(result.quantity);
+      if (result.duration) setFrascoDuration(result.duration);
+      if (result.category) setFrascoCategory(result.category);
+    } catch (err: any) {
+      setAiError(err?.message || 'Falha ao analisar com IA');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -373,19 +447,57 @@ export default function AddCustomProductModal({ onClose }: Props) {
                 <textarea
                   value={frascoText}
                   onChange={e => { setFrascoText(e.target.value); setFrascoParsed(false); setFrascoSaved(false); }}
-                  placeholder={`Cole o conteúdo do frasco. Formatos aceitos:\n\nVitamina D3 10.000UI\nMagnésio Quelato 400mg\nZinco Bisglicinato 30mg\n\nOu separado por traço:\nVitamina D3 - 10.000UI\nOmega 3 - 2g\n\nOu com dois pontos:\nVitamina D3: 10.000UI`}
+                  placeholder={`Cole o conteúdo do frasco em QUALQUER formato — a IA entende.\n\nExemplo 1 (linha por linha):\nVitamina D3 10.000UI\nMagnésio Quelato 400mg\n\nExemplo 2 (tabela/receita bagunçada):\nFormulação: Vit. D3 - 10000 UI, Mag Quelato 400mg; Zn Bisgli 30mg\nTomar 1 cápsula ao dia em jejum por 60 dias.\n\nA IA extrai tudo: nome do frasco, ingredientes, posologia, categoria.`}
                   rows={8}
                   className="w-full border-2 border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-400 font-mono text-purple-800 bg-purple-50/30 resize-none"
                 />
               </div>
 
-              {/* Extract button */}
-              <button onClick={handleParseText}
-                className="w-full py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
-              >
-                <Sparkles size={16} />
-                Extrair Ingredientes Automaticamente
-              </button>
+              {/* Extract buttons: AI + Regex */}
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={handleAnalyzeAI} disabled={aiLoading}
+                  className="py-2.5 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+                >
+                  {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                  {aiLoading ? 'Analisando...' : 'Analisar com IA'}
+                </button>
+                <button onClick={handleParseText} disabled={aiLoading}
+                  className="py-2.5 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+                >
+                  <Sparkles size={16} />
+                  Extrair (simples)
+                </button>
+              </div>
+              {aiError && (
+                <div className="text-xs bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 flex items-start gap-1.5">
+                  <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                  <span>{aiError}</span>
+                </div>
+              )}
+
+              {/* AI provider status */}
+              {(() => {
+                const k = getAIKey();
+                const det = k ? detectProvider(k) : null;
+                return (
+                  <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                    <span className="text-[11px] text-gray-600">
+                      {det && det.valid ? (
+                        <>🤖 IA: <strong className="text-purple-700">{det.label}</strong></>
+                      ) : (
+                        <>⚠️ Nenhuma chave de IA configurada</>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => promptForKey()}
+                      className="text-[11px] text-purple-600 hover:text-purple-800 underline font-medium"
+                    >
+                      {det && det.valid ? 'Trocar chave' : 'Adicionar chave'}
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Parsed results */}
               {frascoParsed && (

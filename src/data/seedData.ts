@@ -3,6 +3,10 @@ import { FRASCOS_FARMACIA } from './frascos-farmacia';
 import { FRASCOS_GROWTH } from './frascos-growth';
 import { FRASCOS_DOCTORSFIRST } from './frascos-doctorsfirst';
 import { SUPER_FRASCOS } from './super-frascos';
+import { FRASCOS_MARLETE_BRANDED } from './frascos-marlete';
+import { FRASCOS_ESPECIALIZADOS } from './frascos-especializados';
+import { FRASCOS_MODULOS } from './frascos-modulos';
+import { PROTOCOLOS_OFICIAIS } from './protocolos-novos';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FRASCOS — 97 base + 300 categorias (frascos-group1..4)
@@ -1214,6 +1218,9 @@ const BASE_FRASCOS: Frasco[] = [
 
 export const SEED_FRASCOS: Frasco[] = [
   ...SUPER_FRASCOS,
+  ...FRASCOS_MARLETE_BRANDED,
+  ...FRASCOS_ESPECIALIZADOS,
+  ...FRASCOS_MODULOS,
   ...FRASCOS_FARMACIA,
   ...FRASCOS_GROWTH,
   ...FRASCOS_DOCTORSFIRST,
@@ -1474,4 +1481,9 @@ export const SEED_PROTOCOLS: Protocol[] = [
     ],
     createdAt: '2026-01-01',
   },
+  // ═════════════════════════════════════════════════════════════════════════
+  // PROTOCOLOS OFICIAIS DR. WAGNER (importados de protocolos-novos.ts)
+  // 13 numerados + 4 Marlete + Base Essencial + 6 especializados = 24 total
+  // ═════════════════════════════════════════════════════════════════════════
+  ...PROTOCOLOS_OFICIAIS,
 ];

@@ -112,6 +112,15 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
               {tierIcon} {TIER_LABELS[frasco.tier].replace(/^[^ ]+ /, '')}
             </div>
           )}
+          {frasco.branded && (
+            <div
+              className="inline-flex items-center gap-1 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: '#7C3AED' }}
+              title="Contém ingredientes patenteados (branded)"
+            >
+              ✨ Branded
+            </div>
+          )}
         </div>
 
         {/* Name */}

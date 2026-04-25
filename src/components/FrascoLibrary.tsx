@@ -40,6 +40,7 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
   const [activeTier, setActiveTier] = useState<Tier | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [activeSource, setActiveSource] = useState<FrascoSource | 'all'>('all');
+  const [brandedOnly, setBrandedOnly] = useState(false);
 
   // Check if the active category has any frascos with tiers
   const categoryHasTiers = activeCategory
@@ -75,7 +76,8 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
         const matchSource = activeSource === 'all' ? true
           : activeSource === 'manipulado' ? (!f.source || f.source === 'manipulado')
           : f.source === activeSource;
-        return matchSearch && matchCat && matchTier && matchSource;
+        const matchBranded = brandedOnly ? !!f.branded : true;
+        return matchSearch && matchCat && matchTier && matchSource && matchBranded;
       });
 
   const handleDelete = (id: string) => {
@@ -259,6 +261,19 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
               </button>
             );
           })}
+          {/* Branded toggle */}
+          <button
+            onClick={() => setBrandedOnly(b => !b)}
+            className="text-xs px-2.5 py-1 rounded-full font-medium transition-colors ml-auto"
+            style={
+              brandedOnly
+                ? { backgroundColor: '#7C3AED', color: 'white' }
+                : { backgroundColor: '#EDE9FE', color: '#7C3AED', border: '1px solid #C4B5FD' }
+            }
+            title="Mostrar apenas frascos com ingredientes patenteados (branded)"
+          >
+            ✨ Branded
+          </button>
         </div>
       )}
 

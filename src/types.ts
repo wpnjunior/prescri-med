@@ -19,6 +19,7 @@ export type Category =
   | 'fertilidade'
   | 'musculo'
   | 'osso'
+  | 'pele'
   | 'base'
   | 'jejum'
   | 'farmacia'
@@ -55,6 +56,8 @@ export interface Frasco {
   quantity: string;
   duration: string;
   instructions: string;
+  // ── Premium / signature flag ──────────────────────────────────────────
+  branded?: boolean;  // true = usa ingredientes patenteados (signature line)
   // ── Farmácia Sempre Viva fields ───────────────────────────────────────
   source?: FrascoSource;
   purchaseUrl?: string;
@@ -197,6 +200,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   fertilidade: '#FB7185',
   musculo: '#0284C7',
   osso: '#94A3B8',
+  pele: '#F472B6',
   base: '#1E40AF',
   jejum: '#F59E0B',
   farmacia: '#059669',
@@ -224,6 +228,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   fertilidade: '🌸 Fertilidade',
   musculo: '💪 Músculo',
   osso: '🦴 Osso',
+  pele: '✨ Pele',
   base: '📦 Base',
   jejum: '☀️ Jejum',
   farmacia: '🏪 Farmácia',
