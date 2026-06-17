@@ -7,6 +7,14 @@ import { FRASCOS_FARMACIA } from './frascos-farmacia';
 import { FRASCOS_GROWTH } from './frascos-growth';
 import { FRASCOS_DOCTORSFIRST } from './frascos-doctorsfirst';
 import { SUPER_FRASCOS } from './super-frascos';
+import { FRASCOS_MARLETE_BRANDED } from './frascos-marlete';
+import { FRASCOS_ESPECIALIZADOS } from './frascos-especializados';
+import { FRASCOS_MODULOS } from './frascos-modulos';
+import { FRASCOS_COMPOSICOES_NOVAS } from './frascos-composicoes-novas';
+import { FRASCOS_GESTACIONAL } from './frascos-gestacional';
+import { FRASCOS_EMAGRECIMENTO } from './frascos-emagrecimento';
+import { PROTOCOLOS_OFICIAIS } from './protocolos-novos';
+import { tagLayers } from '../utils/layerDetector';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FRASCOS — 97 base + 300 categorias (frascos-group1..4)
@@ -1216,12 +1224,18 @@ const BASE_FRASCOS: Frasco[] = [
   },
 ];
 
-export const SEED_FRASCOS: Frasco[] = [
+export const SEED_FRASCOS: Frasco[] = tagLayers([
   ...SUPER_FRASCOS,
+  ...FRASCOS_MARLETE_BRANDED,
+  ...FRASCOS_ESPECIALIZADOS,
+  ...FRASCOS_MODULOS,
+  ...FRASCOS_COMPOSICOES_NOVAS,
+  ...FRASCOS_GESTACIONAL,
+  ...FRASCOS_EMAGRECIMENTO,
   ...FRASCOS_FARMACIA,
   ...FRASCOS_GROWTH,
   ...FRASCOS_DOCTORSFIRST,
-];
+]);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROTOCOLOS — 1 por condição, 3 tomadas diárias
@@ -1478,4 +1492,6 @@ export const SEED_PROTOCOLS: Protocol[] = [
     ],
     createdAt: '2026-01-01',
   },
+  // ── Protocolos oficiais Dr. Wagner (13 numerados + Marlete + gestacional + emagrecimento) ──
+  ...PROTOCOLOS_OFICIAIS,
 ];

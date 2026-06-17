@@ -1,0 +1,150 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// MÓDULOS-ALVO, CICLOS E BASES — fórmulas dos 13 protocolos numerados
+// Origem: prescricoes_13_protocolos.pdf, Manual Mestre v2
+// ═══════════════════════════════════════════════════════════════════════════
+import type { Frasco } from '../types';
+
+export const FRASCOS_MODULOS: Frasco[] = [
+  // ─── MÓDULOS-ALVO ───
+  {
+    id: 'mod-intestinal', name: '🫁 Módulo Intestinal — Sachê', category: 'intestino', tier: 'intermediario', layer: 'modulo',
+    posology: '1 sachê ao dia, tarde ou noite, em 150-200ml', quantity: '30 sachês', duration: '30-60 dias',
+    instructions: 'Disbiose, leaky gut, reparo de barreira, eixo intestino-cérebro.',
+    ingredients: [
+      { name: 'L-Glutamina', dose: '5.000mg' }, { name: 'Butirato de magnésio (ou tributirina)', dose: '500-1.000mg' },
+      { name: 'Carnosina de zinco', dose: '37,5-75mg' }, { name: 'Quercetina', dose: '100-150mg' },
+      { name: 'Boswellia serrata', dose: '100-150mg' }, { name: 'Lactoferrina', dose: '100mg' },
+      { name: 'PHGG', dose: '2.000mg' }, { name: 'Arabinogalactanas', dose: '1.000mg' },
+      { name: 'Veículo para sachê qsp', dose: '1 sachê' },
+    ],
+  },
+  {
+    id: 'mod-hepatico', name: '🟢 Módulo Hepático — Cápsula GR', category: 'detox', tier: 'intermediario', layer: 'modulo',
+    posology: '1 cápsula 2x/dia (antes do almoço e do jantar)', quantity: '60 cápsulas gastrorresistentes', duration: '60 dias',
+    instructions: 'Suporte de fases 1 e 2 de biotransformação hepática.',
+    ingredients: [
+      { name: 'Silimarina fitossomada', dose: '150mg' }, { name: 'Fosfatidilcolina', dose: '150-200mg' },
+      { name: 'Ácido alfa-lipóico', dose: '100-150mg' }, { name: 'Extrato seco de alcachofra', dose: '200mg' },
+      { name: 'Excipiente qsp', dose: '1 cápsula' },
+    ],
+  },
+  {
+    id: 'mod-cardiometabolico', name: '❤️ Módulo Cardiometabólico — Cápsula GR', category: 'dislipidemia', tier: 'intermediario', layer: 'modulo',
+    posology: '1 cápsula 2x/dia, 20-30 min antes das refeições', quantity: '60 cápsulas gastrorresistentes', duration: '60-90 dias',
+    instructions: 'Resistência insulínica, dislipidemia, suporte mitocondrial cardiometabólico.',
+    ingredients: [
+      { name: 'Berberina HCl', dose: '300-500mg' }, { name: 'L-carnitina', dose: '250-500mg' },
+      { name: 'Astaxantina', dose: '4mg' }, { name: 'CoQ10', dose: '50mg' },
+      { name: 'Ácido alfa-lipóico', dose: '100mg (opcional)' }, { name: 'Excipiente qsp', dose: '1 cápsula' },
+    ],
+  },
+  {
+    id: 'mod-sono-noturno', name: '🌙 Módulo Sono — Sachê Noturno', category: 'sono', tier: 'essencial', layer: 'modulo',
+    posology: '1 sachê 30-45 min antes de dormir', quantity: '30 sachês', duration: '30-60 dias',
+    instructions: 'Indução, profundidade e manutenção do sono. Versão modular acessível.',
+    ingredients: [
+      { name: 'Magnésio bisglicinato', dose: '150-200mg' }, { name: 'Glicina', dose: '2.000-3.000mg' },
+      { name: 'L-Teanina', dose: '200mg' }, { name: 'GABA', dose: '150-250mg' },
+      { name: 'Melatonina', dose: '0,5-3mg' }, { name: 'Fosfatidilserina (quando necessário)', dose: '100mg' },
+      { name: 'Veículo para sachê qsp', dose: '1 sachê' },
+    ],
+  },
+  {
+    id: 'mod-emagrecimento', name: '🔥 Módulo Emagrecimento — Cápsula GR', category: 'gordura', tier: 'intermediario', layer: 'modulo',
+    posology: '1 cápsula antes do almoço (11:30) e 1 antes do jantar (19:30)', quantity: '60 cápsulas gastrorresistentes', duration: '60-90 dias',
+    instructions: 'Resistência insulínica, saciedade, oxidação de gordura.',
+    ingredients: [
+      { name: 'Berberina HCl', dose: '300mg' }, { name: 'L-carnitina', dose: '300mg' },
+      { name: 'Ácido alfa-lipóico', dose: '100mg' }, { name: 'Picolinato de cromo', dose: '200mcg' },
+      { name: 'Mio-inositol', dose: '250mg' }, { name: 'Excipiente qsp', dose: '1 cápsula' },
+    ],
+  },
+  {
+    id: 'mod-eixo-ovario', name: '🌸 Módulo Eixo Ovário-Metabólico — Sachê', category: 'fertilidade', tier: 'premium', layer: 'modulo',
+    posology: '1 sachê ao dia, 30 min antes do almoço', quantity: '90 sachês', duration: '90-180 dias',
+    instructions: 'SOP, fertilidade, qualidade ovariana, eixo metabólico-reprodutivo.',
+    ingredients: [
+      { name: 'Mio-inositol', dose: '2.000mg' }, { name: 'D-Quiroinositol', dose: '500mg' },
+      { name: 'Ácido Alfa-Lipoico (R-forma)', dose: '300mg' }, { name: 'Berberina fitossomada', dose: '250mg' },
+      { name: 'Picolinato de cromo', dose: '300mcg' }, { name: 'Vanádio (Vanadyl Sulfate)', dose: '10mg' },
+      { name: 'Magnésio bisglicinato', dose: '200mg' }, { name: 'Zinco bisglicinato', dose: '10mg' },
+      { name: 'Bitter Melon (extrato 10:1)', dose: '300mg' }, { name: 'Veículo para sachê qsp', dose: '1 sachê' },
+    ],
+  },
+  // ─── CICLOS ───
+  {
+    id: 'ciclo-detox', name: '🍃 Ciclo Detox — Cápsula GR (21 dias)', category: 'detox', tier: 'intermediario', layer: 'ciclo', cycleDays: 21,
+    posology: '1 cápsula 2x/dia por 21 dias', quantity: '42 cápsulas gastrorresistentes', duration: '21 dias (ciclo)',
+    instructions: 'Detox de fase 1 e 2. Combinar com adsorvente noturno. Não exceder 21 dias.',
+    ingredients: [
+      { name: 'Sulforafano', dose: '10-20mg' }, { name: 'Silimarina', dose: '150mg' },
+      { name: 'Alcachofra', dose: '200mg' }, { name: 'Curcumina fitossomada', dose: '150-200mg' },
+      { name: 'Chlorella', dose: '250mg' }, { name: 'Excipiente qsp', dose: '1 cápsula' },
+    ],
+  },
+  {
+    id: 'ciclo-detox-noturno', name: '🌃 Sachê Detox Noturno (21 dias)', category: 'detox', tier: 'intermediario', layer: 'ciclo', cycleDays: 21,
+    posology: '1 sachê à noite, 2-3h longe de medicações', quantity: '21 sachês', duration: '21 dias (ciclo)',
+    instructions: 'Adsorvente + prebiótico noturno. NÃO tomar junto com outros suplementos ou medicamentos.',
+    ingredients: [
+      { name: 'Carvão ativado', dose: '250mg' }, { name: 'PHGG', dose: '2.000mg' },
+      { name: 'Inulina', dose: '1.000mg' }, { name: 'L-Glutamina', dose: '2.000mg' },
+      { name: 'Veículo para sachê qsp', dose: '1 sachê' },
+    ],
+  },
+  {
+    id: 'ciclo-desparasitacao', name: '🛡️ Ciclo Desparasitação (14-21 dias)', category: 'antiparasitario', tier: 'intermediario', layer: 'ciclo', cycleDays: 21,
+    posology: '1 cápsula 2x/dia por 14-21 dias', quantity: '42 cápsulas gastrorresistentes', duration: '14-21 dias (ciclo)',
+    instructions: 'Antiparasitário herbal. Hidratação aumentada e probiótico após o ciclo.',
+    ingredients: [
+      { name: 'Noz preta', dose: '250-300mg' }, { name: 'Artemisia annua', dose: '150-200mg' },
+      { name: 'Cravo-da-índia', dose: '100-150mg' }, { name: "Pau d'arco", dose: '200-250mg' },
+      { name: 'Excipiente qsp', dose: '1 cápsula' },
+    ],
+  },
+  {
+    id: 'ciclo-pos-sibo', name: '🦠 Pós-SIBO / Modulação Microbiota (30 dias)', category: 'intestino', tier: 'intermediario', layer: 'ciclo', cycleDays: 30,
+    posology: '1 sachê ao dia por 30 dias, longe de antimicrobianos', quantity: '30 sachês', duration: '30 dias (ciclo)',
+    instructions: 'Reabilitação após SIBO ou ciclo antiparasitário. NÃO usar junto com antibióticos.',
+    ingredients: [
+      { name: 'PHGG', dose: '1.500-2.000mg' }, { name: 'Saccharomyces boulardii', dose: '5 bilhões UFC' },
+      { name: 'Bifidobacterium infantis', dose: '2-5 bilhões UFC' }, { name: 'Lactobacillus plantarum', dose: '2-5 bilhões UFC' },
+      { name: 'Lactoferrina (opcional)', dose: '100mg' }, { name: 'Veículo para sachê qsp', dose: '1 sachê' },
+    ],
+  },
+  // ─── BASES UNIVERSAIS ───
+  {
+    id: 'base-1-hidrosoluvel', name: '☀️ Base 1 — Sachê Hidrossolúvel Diário', category: 'base', tier: 'essencial', layer: 'base',
+    posology: '1 sachê ao dia, em 100-150ml de água, junto com café da manhã', quantity: '30 sachês', duration: 'Uso contínuo',
+    instructions: 'Espinha estrutural matinal. Todo paciente recebe esta base.',
+    ingredients: [
+      { name: 'Benfotiamina (B1)', dose: '50mg' }, { name: 'Riboflavina-5-fosfato (B2)', dose: '10mg' },
+      { name: 'Niacinamida (B3)', dose: '50mg' }, { name: 'Pantotenato de cálcio (B5)', dose: '100mg' },
+      { name: 'Piridoxal-5-fosfato (B6)', dose: '20mg' }, { name: 'Biotina', dose: '300mcg' },
+      { name: 'Metilfolato', dose: '400mcg' }, { name: 'Metilcobalamina', dose: '500-1.000mcg' },
+      { name: 'Vitamina C tamponada', dose: '250-300mg' }, { name: 'Zinco bisglicinato', dose: '7,5-10mg' },
+      { name: 'Selênio L-selenometionina', dose: '50-100mcg' }, { name: 'Colina bitartarato', dose: '100-150mg' },
+      { name: 'Mio-inositol', dose: '250mg' }, { name: 'Veículo para sachê qsp', dose: '1 sachê' },
+    ],
+  },
+  {
+    id: 'base-2-lipossoluvel', name: '🫒 Base 2 — Cápsula Lipossolúvel ADEK', category: 'base', tier: 'essencial', layer: 'base',
+    posology: '1 cápsula com almoço ou jantar', quantity: '60 cápsulas oleosas (MCT)', duration: 'Uso contínuo',
+    instructions: 'Lipossolúveis pareadas. ADEK + Q10 + DHA. Tomar com refeição contendo gordura.',
+    ingredients: [
+      { name: 'Vitamina A', dose: '5.000UI' }, { name: 'Vitamina D3', dose: '2.000-5.000UI (conforme exame)' },
+      { name: 'Vitamina K2 MK-7 (trans)', dose: '100mcg' }, { name: 'Vitamina E natural', dose: '100UI' },
+      { name: 'DHA', dose: '250mg' }, { name: 'CoQ10', dose: '50-60mg' },
+    ],
+  },
+  {
+    id: 'base-2-premium', name: '🌟 Base 2 Premium — ADEK + PQQ + Q10 (gotas)', category: 'base', tier: 'premium', layer: 'base',
+    posology: '5 gotas/dia (solução oleosa MCT) no almoço', quantity: 'Frasco 30ml', duration: 'Uso contínuo',
+    instructions: 'Versão premium em gotas — maior biodisponibilidade. Com refeição.',
+    ingredients: [
+      { name: 'Vitamina A', dose: '5.000UI' }, { name: 'Vitamina D3', dose: '10.000UI (conforme exame)' },
+      { name: 'Vitamina E', dose: '100UI' }, { name: 'Vitamina K2 MK-7', dose: '200mcg' },
+      { name: 'CoQ10 Ubiquinol Kaneka®', dose: '100mg' }, { name: 'PQQ', dose: '10mg' },
+    ],
+  },
+];
