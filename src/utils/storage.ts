@@ -1,4 +1,4 @@
-import type { AppState, Doctor, Frasco, FavoriteEntry, FrascoPrice, Prescription, Protocol } from '../types';
+import type { AppState, Doctor, Frasco, FavoriteEntry, FrascoPrice, Prescription, Protocol, SavedPrescription } from '../types';
 
 const FRASCOS_KEY = 'prescribed_frascos';
 const DOCTOR_KEY = 'prescribed_doctor';
@@ -6,6 +6,7 @@ const PRESCRIPTION_KEY = 'prescribed_prescription';
 const PROTOCOLS_KEY = 'prescribed_protocols';
 const FAVORITES_KEY = 'prescri_favorites';
 const PRICES_KEY = 'prescri_frasco_prices';
+const HISTORY_KEY = 'prescri_prescription_history';
 
 export function saveFrascos(frascos: Frasco[]): void {
   try { localStorage.setItem(FRASCOS_KEY, JSON.stringify(frascos)); } catch (e) { console.error(e); }
@@ -47,6 +48,13 @@ export function saveFrascoPrices(prices: FrascoPrice[]): void {
 }
 export function loadFrascoPrices(): FrascoPrice[] | null {
   try { const r = localStorage.getItem(PRICES_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+
+export function savePrescriptionHistory(history: SavedPrescription[]): void {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) { console.error(e); }
+}
+export function loadPrescriptionHistory(): SavedPrescription[] | null {
+  try { const r = localStorage.getItem(HISTORY_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
 }
 
 export function saveState(state: AppState): void {

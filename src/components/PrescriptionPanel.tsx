@@ -1,22 +1,33 @@
 import React, { useState } from 'react';
-import { Settings, FileDown, RotateCcw, User, Calendar, Clock, ShieldCheck } from 'lucide-react';
+import { Settings, FileDown, RotateCcw, User, Calendar, Clock, ShieldCheck, Save, History, Check } from 'lucide-react';
 import type { Frasco, Patient } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, formatHour, HOURS } from '../types';
 import { useAppContext } from '../context';
 import Timeline from './Timeline';
 import { exportToPDF } from '../utils/pdf';
 import VidaasModal from './VidaasModal';
+import PrescriptionHistoryModal from './PrescriptionHistoryModal';
+import LayerValidator from './LayerValidator';
 
 interface PrescriptionPanelProps {
   onOpenSettings: () => void;
+  onEditFrasco?: (frasco: Frasco) => void;
 }
 
-export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelProps) {
+export default function PrescriptionPanel({ onOpenSettings, onEditFrasco }: PrescriptionPanelProps) {
   const { state, dispatch } = useAppContext();
   const [editingPatient, setEditingPatient] = useState(false);
   const [patientForm, setPatientForm] = useState<Patient>(state.prescription.patient);
   const [exporting, setExporting] = useState(false);
   const [vidaasOpen, setVidaasOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
+
+  const handleSavePrescription = () => {
+    dispatch({ type: 'SAVE_PRESCRIPTION' });
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 2000);
+  };
 
   const frascoMap: Record<string, Frasco> = {};
   state.frascos.forEach(f => { frascoMap[f.id] = f; });
@@ -66,6 +77,23 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
             className="flex items-center gap-1.5 text-xs text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <RotateCcw size={13} /> Nova Prescrição
+          </button>
+          <button
+            onClick={handleSavePrescription}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${saveFlash ? 'bg-green-500 text-white' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+            title="Salvar prescrição no histórico"
+          >
+            {saveFlash ? <><Check size={13} /> Salvo!</> : <><Save size={13} /> Salvar</>}
+          </button>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium bg-gray-700 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+            title="Ver prescrições salvas"
+          >
+            <History size={13} /> Histórico
+            {state.savedPrescriptions.length > 0 && (
+              <span className="bg-white text-gray-700 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{state.savedPrescriptions.length}</span>
+            )}
           </button>
           <button
             onClick={handleExport}
@@ -237,12 +265,24 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
           )}
         </div>
 
+        {/* Layer validator (3 camadas) */}
+        {(() => {
+          const allFrascos = state.prescription.timeline.flatMap(s => s.entries.map(e => frascoMap[e.frascoId]).filter(Boolean));
+          if (allFrascos.length === 0) return null;
+          return (
+            <div className="mb-3">
+              <p className="text-xs font-medium text-gray-500 mb-2">🏛️ Sistema de 3 Camadas (Manual Mestre)</p>
+              <LayerValidator frascos={allFrascos as Frasco[]} />
+            </div>
+          );
+        })()}
+
         {/* Timeline */}
         <div className="mb-2">
           <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
             <Clock size={12} /> Horários de uso — arraste frascos da biblioteca para os horários
           </p>
-          <Timeline frascoMap={frascoMap} />
+          <Timeline frascoMap={frascoMap} onEditFrasco={onEditFrasco} />
         </div>
       </div>
 
@@ -256,6 +296,9 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
           onStartAuth={() => setVidaasOpen(false)}
         />
       )}
+
+      {/* Prescription History Modal */}
+      {historyOpen && <PrescriptionHistoryModal onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }
