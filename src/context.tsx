@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import type { AppState, AppAction, Frasco, FavoriteEntry, Prescription, TimeSlot } from './types';
+import type { AppState, AppAction, FavoriteEntry, SavedPrescription, TimeSlot } from './types';
 import { HOURS } from './types';
-import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loadPrescription, saveProtocols, loadProtocols, saveFavorites, loadFavorites, saveFrascoPrices, loadFrascoPrices } from './utils/storage';
+import { saveFrascos, saveDoctor, savePrescription, loadFrascos, loadDoctor, loadPrescription, saveProtocols, loadProtocols, saveFavorites, loadFavorites, saveFrascoPrices, loadFrascoPrices, savePrescriptionHistory, loadPrescriptionHistory } from './utils/storage';
+import { syncPrescriptionsToFirestore, loadPrescriptionsFromFirestore, syncCustomFrascosToFirestore, loadCustomFrascosFromFirestore } from './utils/firebase';
 import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
 // Bump this number whenever seed data changes to force refresh
@@ -44,6 +45,7 @@ function buildInitialState(): AppState {
     protocols: needsRefresh ? SEED_PROTOCOLS : (loadProtocols() ?? SEED_PROTOCOLS),
     favorites: loadFavorites() ?? [],
     frascoPrices: loadFrascoPrices() ?? [],
+    savedPrescriptions: loadPrescriptionHistory() ?? [],
   };
 }
 
@@ -131,6 +133,42 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'RESET_FRASCO_PRICE':
       return { ...state, frascoPrices: state.frascoPrices.filter(p => p.frascoId !== action.payload) };
 
+    // ── Prescription History ─────────────────────────────────────────────
+    case 'SAVE_PRESCRIPTION': {
+      const { prescription } = state;
+      const now = new Date().toISOString();
+      const frascoCount = prescription.timeline.reduce((n, s) => n + s.entries.length, 0);
+      const slotCount = prescription.timeline.filter(s => s.entries.length > 0).length;
+      const existingIdx = state.savedPrescriptions.findIndex(
+        sp => sp.patient.name === prescription.patient.name && sp.date === prescription.date && prescription.patient.name
+      );
+      if (existingIdx >= 0) {
+        const updated: SavedPrescription = {
+          ...state.savedPrescriptions[existingIdx],
+          patient: { ...prescription.patient },
+          timeline: JSON.parse(JSON.stringify(prescription.timeline)),
+          updatedAt: now, frascoCount, slotCount,
+        };
+        const list = [...state.savedPrescriptions];
+        list[existingIdx] = updated;
+        return { ...state, savedPrescriptions: list };
+      }
+      const saved: SavedPrescription = {
+        id: `rx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        patient: { ...prescription.patient }, date: prescription.date,
+        timeline: JSON.parse(JSON.stringify(prescription.timeline)),
+        savedAt: now, updatedAt: now, frascoCount, slotCount,
+      };
+      return { ...state, savedPrescriptions: [saved, ...state.savedPrescriptions] };
+    }
+    case 'LOAD_PRESCRIPTION': {
+      const found = state.savedPrescriptions.find(sp => sp.id === action.payload);
+      if (!found) return state;
+      return { ...state, prescription: { patient: { ...found.patient }, date: found.date, timeline: JSON.parse(JSON.stringify(found.timeline)) } };
+    }
+    case 'DELETE_SAVED_PRESCRIPTION':
+      return { ...state, savedPrescriptions: state.savedPrescriptions.filter(sp => sp.id !== action.payload) };
+
     default:
       return state;
   }
@@ -145,6 +183,39 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, buildInitialState);
+  const [firebaseLoaded, setFirebaseLoaded] = React.useState(false);
+
+  // ── Load from Firebase on first mount ──────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cloudPrescriptions = await loadPrescriptionsFromFirestore();
+        if (cancelled) return;
+        if (cloudPrescriptions && cloudPrescriptions.length > 0) {
+          const local = loadPrescriptionHistory() ?? [];
+          const cloudIds = new Set(cloudPrescriptions.map(p => p.id));
+          const merged = [...cloudPrescriptions, ...local.filter(p => !cloudIds.has(p.id))];
+          merged.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+          dispatch({ type: 'SET_STATE', payload: { ...buildInitialState(), savedPrescriptions: merged } });
+          savePrescriptionHistory(merged);
+        }
+        const cloudFrascos = await loadCustomFrascosFromFirestore();
+        if (cancelled) return;
+        if (cloudFrascos && cloudFrascos.length > 0) {
+          const current = loadFrascos() ?? SEED_FRASCOS;
+          const cloudIds = new Set(cloudFrascos.map(f => f.id));
+          const nonCustom = current.filter(f => f.source !== 'custom' || !cloudIds.has(f.id));
+          saveFrascos([...nonCustom, ...cloudFrascos]);
+        }
+      } catch (err) {
+        console.warn('[Firebase] Initial load failed, using localStorage:', err);
+      } finally {
+        if (!cancelled) setFirebaseLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { saveFrascos(state.frascos); }, [state.frascos]);
   useEffect(() => { saveDoctor(state.doctor); }, [state.doctor]);
@@ -152,6 +223,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { saveProtocols(state.protocols); }, [state.protocols]);
   useEffect(() => { saveFavorites(state.favorites); }, [state.favorites]);
   useEffect(() => { saveFrascoPrices(state.frascoPrices); }, [state.frascoPrices]);
+  useEffect(() => { savePrescriptionHistory(state.savedPrescriptions); }, [state.savedPrescriptions]);
+
+  // ── Sync to Firebase (debounced) ───────────────────────────────────────
+  useEffect(() => {
+    if (!firebaseLoaded) return;
+    const t = setTimeout(() => syncPrescriptionsToFirestore(state.savedPrescriptions), 2000);
+    return () => clearTimeout(t);
+  }, [state.savedPrescriptions, firebaseLoaded]);
+  useEffect(() => {
+    if (!firebaseLoaded) return;
+    const t = setTimeout(() => syncCustomFrascosToFirestore(state.frascos), 2000);
+    return () => clearTimeout(t);
+  }, [state.frascos, firebaseLoaded]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

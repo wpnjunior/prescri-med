@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Search, Plus, Heart, Eye } from 'lucide-react';
-import type { Category, Tier, Frasco, FrascoSource } from '../types';
-import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS } from '../types';
+import { useState } from 'react';
+import { Search, Plus, Heart, Eye, ShoppingBag, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
+import type { Category, Tier, Frasco, FrascoSource, Layer } from '../types';
+import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS, LAYER_LABELS, LAYER_COLORS } from '../types';
 import { useAppContext } from '../context';
 import FrascoCard from './FrascoCard';
+import SyncStatusIndicator from './SyncStatusIndicator';
 
 const SOURCE_TABS: { key: FrascoSource | 'all'; label: string; color: string; bg: string }[] = [
   { key: 'all', label: '📋 Todos', color: '#374151', bg: '#F3F4F6' },
@@ -11,6 +12,7 @@ const SOURCE_TABS: { key: FrascoSource | 'all'; label: string; color: string; bg
   { key: 'farmacia', label: '🏪 Farmácia', color: '#059669', bg: '#D1FAE5' },
   { key: 'growth', label: '💪 Growth', color: '#D97706', bg: '#FEF3C7' },
   { key: 'doctorsfirst', label: '🩺 DoctorsFirst', color: '#0065B3', bg: '#DBEAFE' },
+  { key: 'custom', label: '🔗 Meus Produtos', color: '#8B5CF6', bg: '#EDE9FE' },
 ];
 
 interface FrascoLibraryProps {
@@ -18,12 +20,13 @@ interface FrascoLibraryProps {
   onEditFrasco: (frasco: Frasco) => void;
   onOpenFusion?: (preSelectedIds: string[]) => void;
   onOpenPanoramic?: () => void;
+  onAddCustomProduct?: () => void;
 }
 
 const ALL_CATEGORIES: Category[] = [
   'farmacia', 'base', 'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro', 'disposicao',
   'imunidade', 'inflamacao', 'detox', 'lipoedema', 'dislipidemia', 'diabetes',
-  'antiparasitario', 'desmame', 'libido', 'fertilidade', 'musculo', 'osso',
+  'antiparasitario', 'desmame', 'libido', 'fertilidade', 'musculo', 'osso', 'pele',
   'hormonal', 'jejum', 'outro',
 ];
 
@@ -31,150 +34,123 @@ const ALL_TIERS: Tier[] = ['essencial', 'intermediario', 'premium'];
 
 type ViewMode = 'library' | 'favorites';
 
-export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion, onOpenPanoramic }: FrascoLibraryProps) {
+export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion, onOpenPanoramic, onAddCustomProduct }: FrascoLibraryProps) {
   const { state, dispatch } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [activeTier, setActiveTier] = useState<Tier | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [activeSource, setActiveSource] = useState<FrascoSource | 'all'>('all');
+  const [brandedOnly, setBrandedOnly] = useState(false);
+  const [activeLayer, setActiveLayer] = useState<Layer | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(() => localStorage.getItem('prescri_filters_expanded') === 'true');
 
-  // Check if the active category has any frascos with tiers
-  const categoryHasTiers = activeCategory
-    ? state.frascos.some(f => f.category === activeCategory && f.tier)
-    : false;
+  const toggleFilters = () => {
+    const next = !filtersExpanded;
+    setFiltersExpanded(next);
+    localStorage.setItem('prescri_filters_expanded', String(next));
+  };
 
-  // Count frascos per tier in active category
+  const categoryHasTiers = activeCategory ? state.frascos.some(f => f.category === activeCategory && f.tier) : false;
   const tierCounts = activeCategory
-    ? ALL_TIERS.reduce((acc, tier) => {
-        acc[tier] = state.frascos.filter(f => f.category === activeCategory && f.tier === tier).length;
-        return acc;
-      }, {} as Record<Tier, number>)
+    ? ALL_TIERS.reduce((acc, tier) => { acc[tier] = state.frascos.filter(f => f.category === activeCategory && f.tier === tier).length; return acc; }, {} as Record<Tier, number>)
     : ({} as Record<Tier, number>);
 
-  // Get favorite frascos
   const favoriteFrascos = state.favorites
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(fav => state.frascos.find(f => f.id === fav.frascoId))
     .filter((f): f is Frasco => !!f);
 
   const filtered = viewMode === 'favorites'
-    ? favoriteFrascos.filter(f => {
-        if (!search) return true;
-        return f.name.toLowerCase().includes(search.toLowerCase()) ||
-          f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
-      })
+    ? favoriteFrascos.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()) || f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase())))
     : state.frascos.filter(f => {
-        const matchSearch =
-          f.name.toLowerCase().includes(search.toLowerCase()) ||
-          f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
+        const matchSearch = f.name.toLowerCase().includes(search.toLowerCase()) || f.ingredients.some(i => i.name.toLowerCase().includes(search.toLowerCase()));
         const matchCat = activeCategory ? f.category === activeCategory : true;
         const matchTier = activeTier ? f.tier === activeTier : true;
-        const matchSource = activeSource === 'all' ? true
-          : activeSource === 'manipulado' ? (!f.source || f.source === 'manipulado')
-          : f.source === activeSource;
-        return matchSearch && matchCat && matchTier && matchSource;
+        const matchSource = activeSource === 'all' ? true : activeSource === 'manipulado' ? (!f.source || f.source === 'manipulado') : f.source === activeSource;
+        const matchBranded = brandedOnly ? !!f.branded : true;
+        const matchLayer = activeLayer ? f.layer === activeLayer : true;
+        return matchSearch && matchCat && matchTier && matchSource && matchBranded && matchLayer;
       });
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este frasco?')) {
-      dispatch({ type: 'DELETE_FRASCO', payload: id });
-    }
+    if (window.confirm('Tem certeza que deseja excluir este frasco?')) dispatch({ type: 'DELETE_FRASCO', payload: id });
   };
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-800">Biblioteca de Frascos</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-gray-800">Biblioteca de Frascos</h2>
+            <SyncStatusIndicator />
+          </div>
           <div className="flex items-center gap-1.5">
             {onOpenPanoramic && (
-              <button
-                onClick={onOpenPanoramic}
-                className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
-                title="Ver todos os frascos"
-              >
-                <Eye size={14} />
-                <span className="hidden lg:inline">Ver Todos</span>
+              <button onClick={onOpenPanoramic} className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors" title="Ver todos os frascos">
+                <Eye size={14} /><span className="hidden lg:inline">Ver Todos</span>
               </button>
             )}
-            <button
-              onClick={onAddFrasco}
-              className="flex items-center gap-1 bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-800 transition-colors"
-            >
-              <Plus size={14} />
-              Novo
+            {onAddCustomProduct && (
+              <button onClick={onAddCustomProduct} className="flex items-center gap-1 bg-green-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-green-700 transition-colors" title="Adicionar produto com link ou colar frasco">
+                <ShoppingBag size={14} /><span className="hidden lg:inline">Link</span>
+              </button>
+            )}
+            <button onClick={onAddFrasco} className="flex items-center gap-1 bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-800 transition-colors">
+              <Plus size={14} />Novo
             </button>
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar frasco ou ingrediente..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <input type="text" placeholder="Buscar frasco ou ingrediente..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         </div>
 
-        {/* View mode toggle: Usadas / Biblioteca */}
         <div className="flex gap-1.5 mt-2">
-          <button
-            onClick={() => { setViewMode('favorites'); setActiveCategory(null); setActiveTier(null); }}
-            className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
-              viewMode === 'favorites'
-                ? 'bg-amber-400 text-white shadow-sm'
-                : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'
-            }`}
-          >
-            <Heart size={12} fill={viewMode === 'favorites' ? 'currentColor' : 'none'} />
-            Usadas
-            {state.favorites.length > 0 && (
-              <span className={`text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ${
-                viewMode === 'favorites' ? 'bg-white text-amber-500' : 'bg-amber-200 text-amber-700'
-              }`}>
-                {state.favorites.length}
-              </span>
-            )}
+          <button onClick={() => { setViewMode('favorites'); setActiveCategory(null); setActiveTier(null); }}
+            className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-all ${viewMode === 'favorites' ? 'bg-amber-400 text-white shadow-sm' : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'}`}>
+            <Heart size={12} fill={viewMode === 'favorites' ? 'currentColor' : 'none'} />Usadas
+            {state.favorites.length > 0 && <span className={`text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ${viewMode === 'favorites' ? 'bg-white text-amber-500' : 'bg-amber-200 text-amber-700'}`}>{state.favorites.length}</span>}
           </button>
-          <button
-            onClick={() => setViewMode('library')}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
-              viewMode === 'library'
-                ? 'bg-gray-800 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
+          <button onClick={() => setViewMode('library')} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${viewMode === 'library' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             Biblioteca ({state.frascos.length})
           </button>
         </div>
       </div>
 
-      {/* Source tabs — only in library mode */}
+      {/* Collapsible filter toggle bar */}
       {viewMode === 'library' && (
+        <button onClick={toggleFilters} className="w-full px-4 py-1.5 border-b border-gray-200 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-xs transition-colors">
+          <div className="flex items-center gap-2 flex-wrap">
+            <SlidersHorizontal size={12} className="text-gray-500 flex-shrink-0" />
+            <span className="font-semibold text-gray-700">Filtros</span>
+            {!filtersExpanded && (
+              <>
+                {activeSource !== 'all' && <span className="bg-white text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-gray-200">{SOURCE_TABS.find(t => t.key === activeSource)?.label}</span>}
+                {activeLayer && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ backgroundColor: `${LAYER_COLORS[activeLayer]}20`, color: LAYER_COLORS[activeLayer] }}>{LAYER_LABELS[activeLayer]}</span>}
+                {activeCategory && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium text-white" style={{ backgroundColor: CATEGORY_COLORS[activeCategory] }}>{CATEGORY_LABELS[activeCategory]}</span>}
+                {activeTier && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ backgroundColor: TIER_COLORS[activeTier] }}>{TIER_LABELS[activeTier]}</span>}
+                {brandedOnly && <span className="bg-purple-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">✨ Branded</span>}
+                {activeSource === 'all' && !activeLayer && !activeCategory && !activeTier && !brandedOnly && <span className="text-gray-400 text-[10px] italic">nenhum (mostrando tudo)</span>}
+              </>
+            )}
+          </div>
+          {filtersExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
+        </button>
+      )}
+
+      {/* Source tabs */}
+      {viewMode === 'library' && filtersExpanded && (
         <div className="px-4 py-2 border-b border-gray-200 flex gap-1 overflow-x-auto">
           {SOURCE_TABS.map(tab => {
-            const count = tab.key === 'all'
-              ? state.frascos.length
-              : tab.key === 'manipulado'
-              ? state.frascos.filter(f => !f.source || f.source === 'manipulado').length
-              : state.frascos.filter(f => f.source === tab.key).length;
+            const count = tab.key === 'all' ? state.frascos.length : tab.key === 'manipulado' ? state.frascos.filter(f => !f.source || f.source === 'manipulado').length : state.frascos.filter(f => f.source === tab.key).length;
             if (count === 0) return null;
             return (
-              <button
-                key={tab.key}
-                onClick={() => { setActiveSource(tab.key); setActiveCategory(null); setActiveTier(null); }}
+              <button key={tab.key} onClick={() => { setActiveSource(tab.key); setActiveCategory(null); setActiveTier(null); }}
                 className="text-xs px-2.5 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all flex-shrink-0"
-                style={
-                  activeSource === tab.key
-                    ? { backgroundColor: tab.color, color: 'white' }
-                    : { backgroundColor: tab.bg, color: tab.color }
-                }
-              >
+                style={activeSource === tab.key ? { backgroundColor: tab.color, color: 'white' } : { backgroundColor: tab.bg, color: tab.color }}>
                 {tab.label} ({count})
               </button>
             );
@@ -182,33 +158,34 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
         </div>
       )}
 
-      {/* Category filters — only in library mode */}
-      {viewMode === 'library' && (
+      {/* Layer filters */}
+      {viewMode === 'library' && filtersExpanded && (
+        <div className="px-4 py-1.5 border-b border-gray-100 bg-blue-50/30 flex gap-1.5 items-center">
+          <span className="text-[11px] text-gray-500 font-semibold mr-1">Camada:</span>
+          <button onClick={() => setActiveLayer(null)} className={`text-xs px-2.5 py-1 rounded-full font-medium ${activeLayer === null ? 'bg-gray-700 text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>Todas</button>
+          {(['base', 'modulo', 'ciclo'] as Layer[]).map(layer => {
+            const count = state.frascos.filter(f => f.layer === layer).length;
+            if (count === 0) return null;
+            return (
+              <button key={layer} onClick={() => setActiveLayer(activeLayer === layer ? null : layer)} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={activeLayer === layer ? { backgroundColor: LAYER_COLORS[layer], color: 'white' } : { backgroundColor: `${LAYER_COLORS[layer]}15`, color: LAYER_COLORS[layer], border: `1px solid ${LAYER_COLORS[layer]}40` }}>
+                {LAYER_LABELS[layer]} <span className="opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Category filters */}
+      {viewMode === 'library' && filtersExpanded && (
         <div className="px-4 py-2 border-b border-gray-100 flex flex-wrap gap-1.5">
-          <button
-            onClick={() => { setActiveCategory(null); setActiveTier(null); }}
-            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-              activeCategory === null
-                ? 'bg-gray-800 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Todos
-          </button>
+          <button onClick={() => { setActiveCategory(null); setActiveTier(null); }} className={`text-xs px-2.5 py-1 rounded-full font-medium ${activeCategory === null ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Todos</button>
           {ALL_CATEGORIES.map(cat => {
             const count = state.frascos.filter(f => f.category === cat).length;
             if (count === 0) return null;
             return (
-              <button
-                key={cat}
-                onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setActiveTier(null); }}
-                className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors`}
-                style={
-                  activeCategory === cat
-                    ? { backgroundColor: CATEGORY_COLORS[cat], color: 'white' }
-                    : { backgroundColor: `${CATEGORY_COLORS[cat]}20`, color: CATEGORY_COLORS[cat] }
-                }
-              >
+              <button key={cat} onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setActiveTier(null); }} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={activeCategory === cat ? { backgroundColor: CATEGORY_COLORS[cat], color: 'white' } : { backgroundColor: `${CATEGORY_COLORS[cat]}20`, color: CATEGORY_COLORS[cat] }}>
                 {CATEGORY_LABELS[cat]} <span className="opacity-70">({count})</span>
               </button>
             );
@@ -216,41 +193,27 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
         </div>
       )}
 
-      {/* Tier sub-filters — only show when a category is selected and has tiered frascos */}
-      {viewMode === 'library' && activeCategory && categoryHasTiers && (
-        <div className="px-4 py-1.5 border-b border-gray-100 bg-gray-50 flex gap-1.5">
-          <button
-            onClick={() => setActiveTier(null)}
-            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-              activeTier === null
-                ? 'bg-gray-700 text-white'
-                : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
-            }`}
-          >
-            Todos os Níveis
-          </button>
+      {/* Tier sub-filters + branded toggle */}
+      {viewMode === 'library' && filtersExpanded && activeCategory && categoryHasTiers && (
+        <div className="px-4 py-1.5 border-b border-gray-100 bg-gray-50 flex gap-1.5 items-center">
+          <button onClick={() => setActiveTier(null)} className={`text-xs px-2.5 py-1 rounded-full font-medium ${activeTier === null ? 'bg-gray-700 text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>Todos os Níveis</button>
           {ALL_TIERS.map(tier => {
             const count = tierCounts[tier] || 0;
             if (count === 0) return null;
             return (
-              <button
-                key={tier}
-                onClick={() => setActiveTier(activeTier === tier ? null : tier)}
-                className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors`}
-                style={
-                  activeTier === tier
-                    ? { backgroundColor: TIER_COLORS[tier], color: 'white' }
-                    : { backgroundColor: `${TIER_COLORS[tier]}15`, color: TIER_COLORS[tier], border: `1px solid ${TIER_COLORS[tier]}40` }
-                }
-              >
+              <button key={tier} onClick={() => setActiveTier(activeTier === tier ? null : tier)} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={activeTier === tier ? { backgroundColor: TIER_COLORS[tier], color: 'white' } : { backgroundColor: `${TIER_COLORS[tier]}15`, color: TIER_COLORS[tier], border: `1px solid ${TIER_COLORS[tier]}40` }}>
                 {TIER_LABELS[tier]} <span className="opacity-70">({count})</span>
               </button>
             );
           })}
+          <button onClick={() => setBrandedOnly(b => !b)} className="text-xs px-2.5 py-1 rounded-full font-medium ml-auto"
+            style={brandedOnly ? { backgroundColor: '#7C3AED', color: 'white' } : { backgroundColor: '#EDE9FE', color: '#7C3AED', border: '1px solid #C4B5FD' }} title="Apenas frascos branded">
+            ✨ Branded
+          </button>
         </div>
       )}
 
-      {/* Card grid */}
       <div className="flex-1 overflow-y-auto p-3">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -258,36 +221,19 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
               <>
                 <Heart size={32} className="mx-auto mb-3 text-gray-300" />
                 <p className="text-sm font-medium">Nenhum frasco favorito</p>
-                <p className="text-xs mt-1">Clique no <Heart size={10} className="inline" /> nos frascos para adicionar aqui</p>
-                <button
-                  onClick={() => setViewMode('library')}
-                  className="mt-3 text-amber-600 text-sm hover:underline"
-                >
-                  Ver biblioteca
-                </button>
+                <button onClick={() => setViewMode('library')} className="mt-3 text-amber-600 text-sm hover:underline">Ver biblioteca</button>
               </>
             ) : (
               <>
                 <p className="text-sm">Nenhum frasco encontrado</p>
-                <button
-                  onClick={onAddFrasco}
-                  className="mt-3 text-blue-600 text-sm hover:underline"
-                >
-                  Adicionar frasco
-                </button>
+                <button onClick={onAddFrasco} className="mt-3 text-blue-600 text-sm hover:underline">Adicionar frasco</button>
               </>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2">
             {filtered.map(frasco => (
-              <FrascoCard
-                key={frasco.id}
-                frasco={frasco}
-                onEdit={onEditFrasco}
-                onDelete={handleDelete}
-                onOpenFusion={onOpenFusion}
-              />
+              <FrascoCard key={frasco.id} frasco={frasco} onEdit={onEditFrasco} onDelete={handleDelete} onOpenFusion={onOpenFusion} />
             ))}
           </div>
         )}

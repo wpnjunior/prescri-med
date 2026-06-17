@@ -3,6 +3,7 @@ import { X, Brain, Sparkles, AlertCircle, Loader2, ChevronDown, ChevronUp, Star,
 import type { Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '../types';
 import { useAppContext } from '../context';
+import { callAIJson, getAIKey, saveAIKey, detectProvider } from '../utils/aiClient';
 
 interface AIInsightsModalProps {
   frasco: Frasco;
@@ -47,32 +48,33 @@ interface AIResult {
   timing: string;
 }
 
-const OPENAI_KEY_STORAGE = 'prescri_openai_key';
+function getApiKey(): string { return getAIKey(); }
+function saveApiKey(key: string) { saveAIKey(key); }
 
-function getApiKey(): string {
-  return localStorage.getItem(OPENAI_KEY_STORAGE) ?? '';
-}
-
-function saveApiKey(key: string) {
-  localStorage.setItem(OPENAI_KEY_STORAGE, key);
-}
-
-async function fetchAIInsights(frasco: Frasco, allFrascos: Frasco[], apiKey: string): Promise<AIResult> {
+async function fetchAIInsights(frasco: Frasco, allFrascos: Frasco[]): Promise<AIResult> {
   const ingredientsList = frasco.ingredients
     .map(i => `- ${i.name}: ${i.dose}`)
     .join('\n');
 
+  // Limita contexto aos relevantes (mesma categoria ou compartilham ingrediente)
+  const ingNames = new Set(frasco.ingredients.map(i => i.name.toLowerCase().trim()));
+  const matchesAny = (f: Frasco) => f.ingredients.some(i => {
+    const n = i.name.toLowerCase();
+    return Array.from(ingNames).some(t => n.includes(t) || t.includes(n));
+  });
+
   const otherFrascos = allFrascos
     .filter(f => f.id !== frasco.id && f.source !== 'farmacia')
-    .map(f => `• "${f.name}" (${CATEGORY_LABELS[f.category]}): ${f.ingredients.map(i => i.name).join(', ')}`)
+    .filter(f => f.category === frasco.category || matchesAny(f))
+    .slice(0, 20)
+    .map(f => `• "${f.name}" (${CATEGORY_LABELS[f.category]}): ${f.ingredients.slice(0, 5).map(i => i.name).join(', ')}`)
     .join('\n');
 
   const farmaciaProducts = allFrascos
     .filter(f => f.source === 'farmacia' && f.purchaseUrl)
-    .map(f => {
-      const priceInfo = f.ingredients?.[0]?.dose || '';
-      return `• "${f.name}" | ${priceInfo} | Indicações: ${f.indicacoes || 'geral'} | Link: ${f.purchaseUrl}`;
-    })
+    .filter(f => f.category === frasco.category || matchesAny(f))
+    .slice(0, 25)
+    .map(f => `• "${f.name}" | ${f.ingredients?.[0]?.dose || ''} | ${f.indicacoes ? `Indicações: ${f.indicacoes.slice(0, 80)} | ` : ''}Link: ${f.purchaseUrl}`)
     .join('\n');
 
   const prompt = `Você é um especialista em nutrologia e farmácia de manipulação integrativa. Analise este frasco manipulado e responda em JSON.
@@ -138,39 +140,11 @@ REGRAS:
 - Use nomes EXATOS das listas de frascos e produtos disponíveis.
 - Copie os links de compra EXATAMENTE como estão na lista.`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: 4096,
-      messages: [
-        { role: 'system', content: 'Você é um especialista em nutrologia e farmácia de manipulação integrativa. Responda APENAS com JSON válido, sem markdown.' },
-        { role: 'user', content: prompt },
-      ],
-    }),
+  return callAIJson<AIResult>({
+    systemPrompt: 'Você é um especialista em nutrologia e farmácia de manipulação integrativa.',
+    userPrompt: prompt,
+    maxTokens: 4096,
   });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const msg = (err as any)?.error?.message ?? `Erro ${response.status}`;
-    throw new Error(msg);
-  }
-
-  const data = await response.json();
-  const text: string = data.choices?.[0]?.message?.content ?? '';
-  if (!text) throw new Error('Resposta inválida da IA');
-  const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-  try {
-    return JSON.parse(clean) as AIResult;
-  } catch {
-    const jsonMatch = clean.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Resposta inválida da IA');
-    return JSON.parse(jsonMatch[0]) as AIResult;
-  }
 }
 
 export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIInsightsModalProps) {
@@ -192,7 +166,8 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
   const runAnalysis = async (key: string) => {
     setLoading(true); setError(null); setResult(null);
     try {
-      const res = await fetchAIInsights(frasco, state.frascos, key);
+      void key;
+      const res = await fetchAIInsights(frasco, state.frascos);
       setResult(res);
     } catch (e: any) {
       setError(e.message ?? 'Erro desconhecido');
@@ -236,7 +211,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
             </div>
             <div>
               <h2 className="text-base font-semibold text-gray-800 flex items-center gap-1">
-                <Sparkles size={14} style={{ color: catColor }} /> Análise IA — ChatGPT
+                <Sparkles size={14} style={{ color: catColor }} /> Análise IA{(() => { const k = getApiKey(); if (!k) return ''; const d = detectProvider(k); return d.valid ? ` — ${d.label}` : ''; })()}
               </h2>
               <p className="text-xs text-gray-500 truncate max-w-xs">{frasco.name}</p>
             </div>
@@ -252,23 +227,18 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-2 text-green-700">
                 <Sparkles size={16} />
-                <span className="font-medium text-sm">Configure sua chave da API OpenAI (ChatGPT)</span>
+                <span className="font-medium text-sm">Configure sua chave de IA</span>
               </div>
               <p className="text-xs text-green-600">
-                Obtenha sua chave em{' '}
-                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer"
-                  className="underline font-medium">platform.openai.com →</a>
-                {' '}(começa com <code className="bg-green-100 px-1 rounded">sk-</code>)
+                Aceita Claude (sk-ant-), OpenAI (sk-), Gemini (AIza) ou Groq (gsk_) — detecto automaticamente.
               </p>
-              <p className="text-xs text-green-500">
-                💡 Dica: você também pode salvar a chave nas Configurações do Médico (ícone ⚙️).
-              </p>
+              {apiKeyInput && (() => { const d = detectProvider(apiKeyInput); return <p className={`text-xs font-medium ${d.valid ? 'text-green-700' : 'text-orange-600'}`}>{d.valid ? `✓ Detectado: ${d.label}` : `⚠️ ${d.label}`}</p>; })()}
               <div className="flex gap-2">
                 <input
                   type="password"
                   value={apiKeyInput}
                   onChange={e => setApiKeyInput(e.target.value)}
-                  placeholder="sk-proj-..."
+                  placeholder="sk-ant-..., sk-..., AIza... ou gsk_..."
                   className="flex-1 border border-green-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 font-mono"
                   onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
                 />
@@ -284,7 +254,7 @@ export default function AIInsightsModal({ frasco, onClose, onOpenFusion }: AIIns
           {loading && (
             <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
               <Loader2 size={32} className="animate-spin" style={{ color: catColor }} />
-              <p className="text-sm">Analisando substâncias com ChatGPT...</p>
+              <p className="text-sm">Analisando substâncias com IA...</p>
             </div>
           )}
 

@@ -3,7 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart, ShoppingCart, Clock, Stethoscope, Copy } from 'lucide-react';
 import type { Frasco } from '../types';
-import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS } from '../types';
+import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS, LAYER_COLORS, LAYER_LABELS } from '../types';
 import { useAppContext } from '../context';
 import { getDefaultPrice } from '../data/defaultPrices';
 import AIInsightsModal from './AIInsightsModal';
@@ -75,7 +75,7 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
 
   const closeContext = () => setContextMenu(null);
 
-  const previewIngredients = frasco.ingredients.slice(0, 3);
+  const previewIngredients = frasco.ingredients;
 
   const tierIcon = frasco.tier === 'premium' ? <Gem size={10} /> : frasco.tier === 'intermediario' ? <Star size={10} /> : <Shield size={10} />;
   const tierBg = frasco.tier === 'premium'
@@ -112,23 +112,33 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
               {tierIcon} {TIER_LABELS[frasco.tier].replace(/^[^ ]+ /, '')}
             </div>
           )}
+          {frasco.branded && (
+            <div className="inline-flex items-center gap-1 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#7C3AED' }} title="Contém ingredientes patenteados">
+              ✨ Branded
+            </div>
+          )}
+          {frasco.layer && (
+            <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: `${LAYER_COLORS[frasco.layer]}20`, color: LAYER_COLORS[frasco.layer], border: `1px solid ${LAYER_COLORS[frasco.layer]}50` }}
+              title={`Camada ${LAYER_LABELS[frasco.layer]}`}>
+              {LAYER_LABELS[frasco.layer].split(' ')[0]}
+            </div>
+          )}
         </div>
 
         {/* Name */}
         <p className="text-sm font-semibold text-gray-800 leading-tight mb-1 pr-16">{frasco.name}</p>
 
-        {/* Preview ingredients */}
+        {/* Ingredientes — todos visíveis */}
         <div className="space-y-0.5">
           {previewIngredients.map((ing, i) => (
             <SubstanceTooltip key={i} ingredientName={ing.name}>
               <p className="text-xs text-gray-500 truncate cursor-help">
-                {ing.name} {ing.dose}
+                <span className="font-medium text-gray-700">{ing.name}</span>
+                <span className="text-gray-400"> {ing.dose}</span>
               </p>
             </SubstanceTooltip>
           ))}
-          {frasco.ingredients.length > 3 && (
-            <p className="text-xs text-gray-400">+{frasco.ingredients.length - 3} mais...</p>
-          )}
         </div>
 
         {/* Store fields: indicações, horário, subcategoria, link — for any product with purchaseUrl */}
@@ -163,10 +173,10 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
               onClick={e => e.stopPropagation()}
               className="inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-full transition-colors"
               style={{
-                backgroundColor: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : '#059669',
+                backgroundColor: frasco.source === 'growth' ? '#D97706' : frasco.source === 'doctorsfirst' ? '#0065B3' : frasco.source === 'custom' ? '#8B5CF6' : '#059669',
               }}
             >
-              <ShoppingCart size={10} /> {frasco.source === 'growth' ? 'Comprar na Growth' : frasco.source === 'doctorsfirst' ? 'Comprar na DoctorsFirst' : 'Comprar na Farmácia'}
+              <ShoppingCart size={10} /> {frasco.source === 'growth' ? 'Comprar na Growth' : frasco.source === 'doctorsfirst' ? 'Comprar na DoctorsFirst' : frasco.source === 'custom' ? 'Comprar' : 'Comprar na Farmácia'}
             </a>
           </div>
         )}
