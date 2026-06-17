@@ -19,6 +19,7 @@ export type Category =
   | 'fertilidade'
   | 'musculo'
   | 'osso'
+  | 'pele'
   | 'base'
   | 'jejum'
   | 'farmacia'
@@ -43,7 +44,28 @@ export const TIER_COLORS: Record<Tier, string> = {
   premium: '#EF4444',
 };
 
-export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst';
+// ─── SISTEMA DE 3 CAMADAS (Manual Mestre v2 — Dr. Wagner) ──────────────────
+export type Layer = 'base' | 'modulo' | 'ciclo';
+
+export const LAYER_LABELS: Record<Layer, string> = {
+  base: '🏛️ Base Essencial',
+  modulo: '🎯 Módulo-Alvo',
+  ciclo: '⏱️ Ciclo Temporário',
+};
+
+export const LAYER_COLORS: Record<Layer, string> = {
+  base: '#1E40AF',
+  modulo: '#22C55E',
+  ciclo: '#F97316',
+};
+
+export const LAYER_DESCRIPTIONS: Record<Layer, string> = {
+  base: 'Uso contínuo. Todo paciente recebe a Base — fundação de qualquer protocolo.',
+  modulo: 'Foco do tratamento. Escolher 1 (máx 2) por vez.',
+  ciclo: 'Tratamento temporário com começo, meio e fim (Detox 21d / Despara. 14-21d / Pós-SIBO 30d).',
+};
+
+export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst' | 'custom';
 
 export interface Frasco {
   id: string;
@@ -55,6 +77,10 @@ export interface Frasco {
   quantity: string;
   duration: string;
   instructions: string;
+  // ── Sistema de 3 camadas + flag branded ───────────────────────────────
+  layer?: Layer;
+  cycleDays?: number;
+  branded?: boolean;
   // ── Farmácia Sempre Viva fields ───────────────────────────────────────
   source?: FrascoSource;
   purchaseUrl?: string;
@@ -180,6 +206,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   fertilidade: '#FB7185',
   musculo: '#0284C7',
   osso: '#94A3B8',
+  pele: '#F472B6',
   base: '#1E40AF',
   jejum: '#F59E0B',
   farmacia: '#059669',
@@ -207,6 +234,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   fertilidade: '🌸 Fertilidade',
   musculo: '💪 Músculo',
   osso: '🦴 Osso',
+  pele: '✨ Pele',
   base: '📦 Base',
   jejum: '☀️ Jejum',
   farmacia: '🏪 Farmácia',
