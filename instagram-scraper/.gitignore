@@ -1,0 +1,13 @@
+# Sessões de login salvas pelo Instaloader
+session-*
+*.session
+
+# Arquivos de links/saída pessoais
+links.txt
+textos.txt
+*.txt
+!links.txt.exemplo
+!requirements.txt
+
+__pycache__/
+*.pyc
