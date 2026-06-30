@@ -13,6 +13,7 @@ import { FRASCOS_MODULOS } from './frascos-modulos';
 import { FRASCOS_COMPOSICOES_NOVAS } from './frascos-composicoes-novas';
 import { FRASCOS_GESTACIONAL } from './frascos-gestacional';
 import { FRASCOS_EMAGRECIMENTO } from './frascos-emagrecimento';
+import { FRASCOS_DESPARASITACAO } from './frascos-desparasitacao';
 import { PROTOCOLOS_OFICIAIS } from './protocolos-novos';
 import { tagLayers } from '../utils/layerDetector';
 
@@ -1232,6 +1233,7 @@ export const SEED_FRASCOS: Frasco[] = tagLayers([
   ...FRASCOS_COMPOSICOES_NOVAS,
   ...FRASCOS_GESTACIONAL,
   ...FRASCOS_EMAGRECIMENTO,
+  ...FRASCOS_DESPARASITACAO,
   ...FRASCOS_FARMACIA,
   ...FRASCOS_GROWTH,
   ...FRASCOS_DOCTORSFIRST,
