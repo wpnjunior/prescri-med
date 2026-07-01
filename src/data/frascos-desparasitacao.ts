@@ -11,7 +11,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
   // Dividido em 2 apresentações por incompatibilidade: oleoso x pó e
   // ácido caprílico (ácido livre) x undecilenato de cálcio (forma caprilato).
   {
-    id: 'despara-f1a-oleoso', name: '🔴 Frasco 1A — Ataque (softgel oleosa)', category: 'antiparasitario', tier: 'intermediario', layer: 'ciclo', cycleDays: 14,
+    id: 'despara-f1a-oleoso', source: 'desparasitacao', name: '🔴 Frasco 1A — Ataque (softgel oleosa)', category: 'antiparasitario', tier: 'intermediario', layer: 'ciclo', cycleDays: 14,
     posology: '1 cápsula 3x/dia com as refeições', quantity: '42 cápsulas gelatinosas (softgel)', duration: '14 dias',
     instructions: 'Fase ativa. Tomar COM alimento, separado ~2h dos comprimidos convencionais. NUNCA junto da ivermectina (jejum) — a gordura aumenta a absorção/risco neuro dela.',
     ingredients: [
@@ -21,7 +21,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
     ],
   },
   {
-    id: 'despara-f1b-seco', name: '🔴 Frasco 1B — Ataque (cápsula entérica)', category: 'antiparasitario', tier: 'intermediario', layer: 'ciclo', cycleDays: 14,
+    id: 'despara-f1b-seco', source: 'desparasitacao', name: '🔴 Frasco 1B — Ataque (cápsula entérica)', category: 'antiparasitario', tier: 'intermediario', layer: 'ciclo', cycleDays: 14,
     posology: '1 cápsula 3x/dia com as refeições', quantity: '42 cápsulas gastrorresistentes', duration: '14 dias',
     instructions: 'Fase ativa, junto da 1A. Separar ~2h dos convencionais. Contém alho — se o paciente usa anticoagulante/antiplaquetário, avaliar antes (risco de sangramento).',
     ingredients: [
@@ -34,7 +34,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
   },
   // ─── FRASCO 2 — TERRENO (metabólico/hepático/digestivo/imune, 30 dias) ───
   {
-    id: 'despara-f2-terreno', name: '🟢 Frasco 2 — Terreno (cápsula entérica)', category: 'detox', tier: 'intermediario', layer: 'modulo',
+    id: 'despara-f2-terreno', source: 'desparasitacao', name: '🟢 Frasco 2 — Terreno (cápsula entérica)', category: 'detox', tier: 'intermediario', layer: 'modulo',
     posology: '1 cápsula 2x/dia com as refeições', quantity: '60 cápsulas gastrorresistentes', duration: '30 dias',
     instructions: 'Suporte metabólico, hepático, digestivo e imune ao longo do protocolo. Berberina inibe CYP3A4/2D6 — atenção em polifarmácia/fármaco de janela estreita; separar ~2h dos antiparasitários.',
     ingredients: [
@@ -48,7 +48,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
   },
   // ─── FRASCO 3 — BASE (vitaminas & minerais, 30 dias) ───
   {
-    id: 'despara-f3a-base-manha', name: '🟡 Frasco 3A — Base Vitaminas (manhã)', category: 'base', tier: 'intermediario', layer: 'base',
+    id: 'despara-f3a-base-manha', source: 'desparasitacao', name: '🟡 Frasco 3A — Base Vitaminas (manhã)', category: 'base', tier: 'intermediario', layer: 'base',
     posology: '1 cápsula pela manhã, após o café', quantity: '30 cápsulas', duration: '30 dias',
     instructions: 'Reposição diária. Tomar com a refeição (D3 lipossolúvel absorve com gordura). Cápsula opaca para proteger as vitaminas B metiladas.',
     ingredients: [
@@ -67,7 +67,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
     ],
   },
   {
-    id: 'despara-f3b-base-noite', name: '🟡 Frasco 3B — Magnésio (noite)', category: 'base', tier: 'essencial', layer: 'base',
+    id: 'despara-f3b-base-noite', source: 'desparasitacao', name: '🟡 Frasco 3B — Magnésio (noite)', category: 'base', tier: 'essencial', layer: 'base',
     posology: '1 cápsula à noite', quantity: '30 cápsulas', duration: '30 dias',
     instructions: 'Sono/relaxamento e reposição. Tomar à noite, longe dos antiparasitários (mineral quela o fármaco).',
     ingredients: [
@@ -77,7 +77,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
   },
   // ─── LINHA CONVENCIONAL (farmácia, tarja — exige receita assinada) ───
   {
-    id: 'despara-conv-pulsos', name: '💊 Antiparasitários (farmácia) — Pulsos D8 e D22', category: 'antiparasitario', tier: 'essencial', layer: 'ciclo', cycleDays: 22, source: 'farmacia',
+    id: 'despara-conv-pulsos', source: 'desparasitacao', name: '💊 Antiparasitários (farmácia) — Pulsos D8 e D22', category: 'antiparasitario', tier: 'essencial', layer: 'ciclo', cycleDays: 22,
     posology: 'Pulso no Dia 8 e no Dia 22 (intervalo de exatamente 14 dias)', quantity: 'conforme receita', duration: 'D8 e D22',
     instructions: 'Albendazol + Ivermectina EM JEJUM (1h antes ou 2h depois de comer, só água, sem gordura). Nitazoxanida COM alimento. Ivermectina calculada pelo peso (200mcg/kg). Sem álcool na fase ativa.',
     ingredients: [
@@ -88,7 +88,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
   },
   // ─── PREPARO (D1–D7) ───
   {
-    id: 'despara-preparo-fibra', name: '🌱 Preparo — Fibra (D1–D7)', category: 'intestino', tier: 'essencial', layer: 'ciclo', cycleDays: 7,
+    id: 'despara-preparo-fibra', source: 'desparasitacao', name: '🌱 Preparo — Fibra (D1–D7)', category: 'intestino', tier: 'essencial', layer: 'ciclo', cycleDays: 7,
     posology: '3–5 g/dia em ~200ml de água, subindo aos poucos', quantity: 'sachês para 7 dias', duration: '7 dias',
     instructions: 'Preparo intestinal antes da fase ativa. Tomar longe de fármacos/frascos (2h+) — nos vãos 10h e 22h. A fibra adsorve medicamento.',
     ingredients: [
@@ -98,7 +98,7 @@ export const FRASCOS_DESPARASITACAO: Frasco[] = [
   },
   // ─── REPARO / RECONSTITUIÇÃO (D23–D30 + 2–4 semanas) ───
   {
-    id: 'despara-reparo', name: '🛡️ Reparo da disbiose (D23–D30+)', category: 'intestino', tier: 'intermediario', layer: 'ciclo', cycleDays: 14,
+    id: 'despara-reparo', source: 'desparasitacao', name: '🛡️ Reparo da disbiose (D23–D30+)', category: 'intestino', tier: 'intermediario', layer: 'ciclo', cycleDays: 14,
     posology: 'Probiótico 2x/dia + L-glutamina 3x/dia + fibra (subir gradual)', quantity: 'sachês/cápsulas para 30 dias', duration: 'D23–D30 e manter +2 a 4 semanas',
     instructions: 'Repor a flora pós-tratamento. O S. boulardii começa já na fase ativa (D8). Separar ~2h do Frasco 1 (antimicrobiano). NÃO usar S. boulardii em imunossupressão grave ou cateter venoso central (risco de fungemia).',
     ingredients: [
