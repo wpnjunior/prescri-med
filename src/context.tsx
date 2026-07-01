@@ -13,7 +13,7 @@ const DEFAULT_DOCTOR = {
   version: 3,
   name: 'Dr. Wagner Pereira Novaes Jr.',
   crm: 'CRM-RJ 0127554-2',
-  cpf: '[removido]',
+  cpf: '',
   specialty: 'Psiquiatria | Nutrologia | Saúde Mental Integrativa e Funcional',
   address: 'Rua Coronel Carvalho n°13',
   city: 'Angra dos Reis – RJ',
