@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart, ShoppingCart, Clock, Stethoscope, Copy } from 'lucide-react';
+import { Edit2, Trash2, Sparkles, Shield, Star, Gem, Heart, ShoppingCart, Clock, Stethoscope, Copy, PlusCircle } from 'lucide-react';
 import type { Frasco } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_COLORS, TIER_LABELS, LAYER_COLORS, LAYER_LABELS } from '../types';
 import { useAppContext } from '../context';
@@ -75,6 +75,16 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
 
   const closeContext = () => setContextMenu(null);
 
+  // Clique pra ADICIONAR o frasco ao primeiro horário livre (alternativa ao arrastar)
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const slots = state.prescription.timeline;
+    const target = slots.find(s => s.entries.length === 0) ?? slots[0];
+    if (!target) return;
+    const instanceId = `inst-${frasco.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    dispatch({ type: 'ADD_TO_TIMELINE', payload: { hour: target.hour, frascoId: frasco.id, instanceId } });
+  };
+
   // Mostrar TODOS os ingredientes — sem truncar, sem "+N mais"
   const previewIngredients = frasco.ingredients;
 
@@ -99,6 +109,14 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
       >
         {/* Category + Tier badges */}
         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <button
+            onClick={handleQuickAdd}
+            onPointerDown={e => e.stopPropagation()}
+            title="Adicionar ao primeiro horário livre"
+            className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 active:scale-95 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm transition-transform"
+          >
+            <PlusCircle size={12} /> Pôr no horário
+          </button>
           <div
             className="inline-block text-white text-xs font-semibold px-2 py-0.5 rounded-full"
             style={{ backgroundColor: CATEGORY_COLORS[frasco.category] }}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, TouchSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import { LayoutList, BookMarked, FlaskConical, Eye } from 'lucide-react';
 import { AppProvider, useAppContext } from './context';
@@ -66,7 +66,10 @@ function AppInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+  );
 
   const handleDragStart = (event: DragStartEvent) => setActiveDragId(event.active.id as string);
 
