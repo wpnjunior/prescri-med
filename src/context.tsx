@@ -6,7 +6,7 @@ import { syncPrescriptionsToFirestore, loadPrescriptionsFromFirestore, syncCusto
 import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
 // Bump this number whenever seed data changes to force refresh
-const SEED_VERSION = 14;
+const SEED_VERSION = 17;
 const SEED_VERSION_KEY = 'prescri_seed_version';
 
 const DEFAULT_DOCTOR = {
@@ -39,7 +39,7 @@ function buildInitialState(): AppState {
   }
 
   return {
-    frascos: needsRefresh ? SEED_FRASCOS : (loadFrascos() ?? SEED_FRASCOS),
+    frascos: needsRefresh ? (() => { const seedIds = new Set(SEED_FRASCOS.map(f => f.id)); const userCustom = (loadFrascos() ?? []).filter(f => f.source === 'custom' || !seedIds.has(f.id)); return [...SEED_FRASCOS, ...userCustom]; })() : (loadFrascos() ?? SEED_FRASCOS),
     doctor: (() => { const d = loadDoctor(); return d?.version === DEFAULT_DOCTOR.version ? d : DEFAULT_DOCTOR; })(),
     prescription: loadPrescription() ?? { patient: { name: '', age: '', birthDate: '' }, date: today, timeline: buildEmptyTimeline() },
     protocols: needsRefresh ? SEED_PROTOCOLS : (loadProtocols() ?? SEED_PROTOCOLS),

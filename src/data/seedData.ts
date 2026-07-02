@@ -1244,7 +1244,10 @@ const EXCLUDED_SUPER_FRASCO_IDS = new Set([
 ]);
 
 // Auto-classifica + filtra os super-frascos excluídos
+import { FRASCOS_DESPARASITACAO } from './frascos-desparasitacao';
+
 export const SEED_FRASCOS: Frasco[] = tagLayers([
+  ...FRASCOS_DESPARASITACAO,
   ...SUPER_FRASCOS.filter(f => !EXCLUDED_SUPER_FRASCO_IDS.has(f.id)),
   ...FRASCOS_MARLETE_BRANDED,
   ...FRASCOS_ESPECIALIZADOS,

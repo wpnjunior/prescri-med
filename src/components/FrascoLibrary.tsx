@@ -8,6 +8,7 @@ import SyncStatusIndicator from './SyncStatusIndicator';
 
 const SOURCE_TABS: { key: FrascoSource | 'all'; label: string; color: string; bg: string }[] = [
   { key: 'all', label: '📋 Todos', color: '#374151', bg: '#F3F4F6' },
+  { key: 'desparasitacao', label: '🪱 App Desparasitar', color: '#FFFFFF', bg: '#DC2626' },
   { key: 'manipulado', label: '🧪 Manipulados', color: '#1E40AF', bg: '#DBEAFE' },
   { key: 'farmacia', label: '🏪 Farmácia', color: '#059669', bg: '#D1FAE5' },
   { key: 'growth', label: '💪 Growth', color: '#D97706', bg: '#FEF3C7' },

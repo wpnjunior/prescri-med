@@ -66,7 +66,7 @@ export const LAYER_DESCRIPTIONS: Record<Layer, string> = {
   ciclo: 'Tratamento temporário com começo, meio e fim definidos (Detox 21d / Desparasitação 14-21d / Pós-SIBO 30d).',
 };
 
-export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst' | 'custom';
+export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst' | 'custom' | 'desparasitacao';
 
 export interface Frasco {
   id: string;
