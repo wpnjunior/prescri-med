@@ -22,6 +22,7 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
   const [showAI, setShowAI] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceInput, setPriceInput] = useState('');
+  const [addedHour, setAddedHour] = useState<number | null>(null);
 
   const isFavorite = state.favorites.some(f => f.frascoId === frasco.id);
   const customPrice = state.frascoPrices.find(p => p.frascoId === frasco.id);
@@ -83,6 +84,8 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
     if (!target) return;
     const instanceId = `inst-${frasco.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     dispatch({ type: 'ADD_TO_TIMELINE', payload: { hour: target.hour, frascoId: frasco.id, instanceId } });
+    setAddedHour(target.hour);
+    setTimeout(() => setAddedHour(null), 1800);
   };
 
   // Mostrar TODOS os ingredientes — sem truncar, sem "+N mais"
@@ -105,7 +108,9 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
         {...listeners}
         {...attributes}
         onContextMenu={handleContextMenu}
-        className={`rounded-lg shadow-sm border border-l-4 p-3 select-none hover:shadow-md transition-all relative group ${cardBg}`}
+        onClick={handleQuickAdd}
+        title="Clique em qualquer parte para pôr no próximo horário livre (ou arraste)"
+        className={`rounded-lg shadow-sm border border-l-4 p-3 select-none hover:shadow-md hover:ring-2 hover:ring-green-300 transition-all relative group cursor-pointer ${cardBg}`}
       >
         {/* Category + Tier badges */}
         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
@@ -113,9 +118,11 @@ export default function FrascoCard({ frasco, onEdit, onDelete, onOpenFusion }: F
             onClick={handleQuickAdd}
             onPointerDown={e => e.stopPropagation()}
             title="Adicionar ao primeiro horário livre"
-            className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 active:scale-95 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm transition-transform"
+            className={`inline-flex items-center gap-1 ${addedHour !== null ? 'bg-emerald-500' : 'bg-green-600 hover:bg-green-700'} active:scale-95 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm transition-all`}
           >
-            <PlusCircle size={12} /> Pôr no horário
+            {addedHour !== null
+              ? <>✓ posto às {String(addedHour).padStart(2, '0')}:00</>
+              : <><PlusCircle size={12} /> Pôr no horário</>}
           </button>
           <div
             className="inline-block text-white text-xs font-semibold px-2 py-0.5 rounded-full"
