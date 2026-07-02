@@ -6,9 +6,10 @@ import TimeSlotRow from './TimeSlotRow';
 
 interface TimelineProps {
   frascoMap: Record<string, Frasco>;
+  onEditFrasco?: (frasco: Frasco) => void;
 }
 
-export default function Timeline({ frascoMap }: TimelineProps) {
+export default function Timeline({ frascoMap, onEditFrasco }: TimelineProps) {
   const { state } = useAppContext();
 
   // Build a map from hour -> TimeSlot for quick lookup
@@ -26,6 +27,7 @@ export default function Timeline({ frascoMap }: TimelineProps) {
             key={hour}
             slot={slot}
             frascoMap={frascoMap}
+            onEditFrasco={onEditFrasco}
           />
         );
       })}

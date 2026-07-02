@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Search, Plus, Heart, Eye, ShoppingBag } from 'lucide-react';
-import type { Category, Tier, Frasco, FrascoSource } from '../types';
-import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS } from '../types';
+import { Search, Plus, Heart, Eye, ShoppingBag, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
+import type { Category, Tier, Frasco, FrascoSource, Layer } from '../types';
+import { CATEGORY_COLORS, CATEGORY_LABELS, TIER_LABELS, TIER_COLORS, LAYER_LABELS, LAYER_COLORS } from '../types';
 import { useAppContext } from '../context';
 import FrascoCard from './FrascoCard';
+import SyncStatusIndicator from './SyncStatusIndicator';
 
 const SOURCE_TABS: { key: FrascoSource | 'all'; label: string; color: string; bg: string }[] = [
   { key: 'all', label: '📋 Todos', color: '#374151', bg: '#F3F4F6' },
@@ -25,7 +26,7 @@ interface FrascoLibraryProps {
 const ALL_CATEGORIES: Category[] = [
   'farmacia', 'base', 'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro', 'disposicao',
   'imunidade', 'inflamacao', 'detox', 'lipoedema', 'dislipidemia', 'diabetes',
-  'antiparasitario', 'desmame', 'libido', 'fertilidade', 'musculo', 'osso',
+  'antiparasitario', 'desmame', 'libido', 'fertilidade', 'musculo', 'osso', 'pele',
   'hormonal', 'jejum', 'outro',
 ];
 
@@ -41,6 +42,16 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [activeSource, setActiveSource] = useState<FrascoSource | 'all'>('all');
   const [brandedOnly, setBrandedOnly] = useState(false);
+  const [activeLayer, setActiveLayer] = useState<Layer | null>(null);
+  // Filtros recolhíveis — padrão minimizado pra dar espaço aos frascos
+  const [filtersExpanded, setFiltersExpanded] = useState(() => {
+    return localStorage.getItem('prescri_filters_expanded') === 'true';
+  });
+  const toggleFilters = () => {
+    const next = !filtersExpanded;
+    setFiltersExpanded(next);
+    localStorage.setItem('prescri_filters_expanded', String(next));
+  };
 
   // Check if the active category has any frascos with tiers
   const categoryHasTiers = activeCategory
@@ -77,7 +88,8 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
           : activeSource === 'manipulado' ? (!f.source || f.source === 'manipulado')
           : f.source === activeSource;
         const matchBranded = brandedOnly ? !!f.branded : true;
-        return matchSearch && matchCat && matchTier && matchSource && matchBranded;
+        const matchLayer = activeLayer ? f.layer === activeLayer : true;
+        return matchSearch && matchCat && matchTier && matchSource && matchBranded && matchLayer;
       });
 
   const handleDelete = (id: string) => {
@@ -91,7 +103,10 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-800">Biblioteca de Frascos</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-gray-800">Biblioteca de Frascos</h2>
+            <SyncStatusIndicator />
+          </div>
           <div className="flex items-center gap-1.5">
             {onOpenPanoramic && (
               <button
@@ -168,8 +183,61 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
         </div>
       </div>
 
-      {/* Source tabs — only in library mode */}
+      {/* Toggle bar — always visible, shows active filters when collapsed */}
       {viewMode === 'library' && (
+        <button
+          onClick={toggleFilters}
+          className="w-full px-4 py-1.5 border-b border-gray-200 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-xs transition-colors"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <SlidersHorizontal size={12} className="text-gray-500 flex-shrink-0" />
+            <span className="font-semibold text-gray-700">Filtros</span>
+            {!filtersExpanded && (
+              <>
+                {activeSource !== 'all' && (
+                  <span className="bg-white text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-gray-200">
+                    {SOURCE_TABS.find(t => t.key === activeSource)?.label}
+                  </span>
+                )}
+                {activeLayer && (
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    style={{ backgroundColor: `${LAYER_COLORS[activeLayer]}20`, color: LAYER_COLORS[activeLayer] }}
+                  >
+                    {LAYER_LABELS[activeLayer]}
+                  </span>
+                )}
+                {activeCategory && (
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
+                    style={{ backgroundColor: CATEGORY_COLORS[activeCategory] }}
+                  >
+                    {CATEGORY_LABELS[activeCategory]}
+                  </span>
+                )}
+                {activeTier && (
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white"
+                    style={{ backgroundColor: TIER_COLORS[activeTier] }}
+                  >
+                    {TIER_LABELS[activeTier]}
+                  </span>
+                )}
+                {brandedOnly && (
+                  <span className="bg-purple-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">✨ Branded</span>
+                )}
+                {activeSource === 'all' && !activeLayer && !activeCategory && !activeTier && !brandedOnly && (
+                  <span className="text-gray-400 text-[10px] italic">nenhum (mostrando tudo)</span>
+                )}
+              </>
+            )}
+          </div>
+          {filtersExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
+        </button>
+      )}
+
+      {/* Source tabs — only in library mode */}
+      {viewMode === 'library' && filtersExpanded && (
         <div className="px-4 py-2 border-b border-gray-200 flex gap-1 overflow-x-auto">
           {SOURCE_TABS.map(tab => {
             const count = tab.key === 'all'
@@ -196,8 +264,44 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
         </div>
       )}
 
+      {/* Layer filters (Base / Módulo / Ciclo) */}
+      {viewMode === 'library' && filtersExpanded && (
+        <div className="px-4 py-1.5 border-b border-gray-100 bg-blue-50/30 flex gap-1.5 items-center">
+          <span className="text-[11px] text-gray-500 font-semibold mr-1">Camada:</span>
+          <button
+            onClick={() => setActiveLayer(null)}
+            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+              activeLayer === null
+                ? 'bg-gray-700 text-white'
+                : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            Todas
+          </button>
+          {(['base', 'modulo', 'ciclo'] as Layer[]).map(layer => {
+            const count = state.frascos.filter(f => f.layer === layer).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={layer}
+                onClick={() => setActiveLayer(activeLayer === layer ? null : layer)}
+                className="text-xs px-2.5 py-1 rounded-full font-medium transition-colors"
+                style={
+                  activeLayer === layer
+                    ? { backgroundColor: LAYER_COLORS[layer], color: 'white' }
+                    : { backgroundColor: `${LAYER_COLORS[layer]}15`, color: LAYER_COLORS[layer], border: `1px solid ${LAYER_COLORS[layer]}40` }
+                }
+                title={layer === 'base' ? 'Uso contínuo, todo paciente' : layer === 'modulo' ? 'Foco do tratamento (1, máx 2)' : 'Tratamento temporário com prazo'}
+              >
+                {LAYER_LABELS[layer]} <span className="opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Category filters — only in library mode */}
-      {viewMode === 'library' && (
+      {viewMode === 'library' && filtersExpanded && (
         <div className="px-4 py-2 border-b border-gray-100 flex flex-wrap gap-1.5">
           <button
             onClick={() => { setActiveCategory(null); setActiveTier(null); }}
@@ -231,7 +335,7 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
       )}
 
       {/* Tier sub-filters — only show when a category is selected and has tiered frascos */}
-      {viewMode === 'library' && activeCategory && categoryHasTiers && (
+      {viewMode === 'library' && filtersExpanded && activeCategory && categoryHasTiers && (
         <div className="px-4 py-1.5 border-b border-gray-100 bg-gray-50 flex gap-1.5">
           <button
             onClick={() => setActiveTier(null)}

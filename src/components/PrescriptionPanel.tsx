@@ -7,12 +7,14 @@ import Timeline from './Timeline';
 import { exportToPDF } from '../utils/pdf';
 import VidaasModal from './VidaasModal';
 import PrescriptionHistoryModal from './PrescriptionHistoryModal';
+import LayerValidator from './LayerValidator';
 
 interface PrescriptionPanelProps {
   onOpenSettings: () => void;
+  onEditFrasco?: (frasco: Frasco) => void;
 }
 
-export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelProps) {
+export default function PrescriptionPanel({ onOpenSettings, onEditFrasco }: PrescriptionPanelProps) {
   const { state, dispatch } = useAppContext();
   const [editingPatient, setEditingPatient] = useState(false);
   const [patientForm, setPatientForm] = useState<Patient>(state.prescription.patient);
@@ -273,12 +275,26 @@ export default function PrescriptionPanel({ onOpenSettings }: PrescriptionPanelP
           )}
         </div>
 
+        {/* Layer validator (3 camadas: Base/Módulo/Ciclo) */}
+        {(() => {
+          const allFrascos = state.prescription.timeline.flatMap(s => s.entries.map(e => frascoMap[e.frascoId]).filter(Boolean));
+          if (allFrascos.length === 0) return null;
+          return (
+            <div className="mb-3">
+              <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
+                🏛️ Sistema de 3 Camadas (Manual Mestre)
+              </p>
+              <LayerValidator frascos={allFrascos} />
+            </div>
+          );
+        })()}
+
         {/* Timeline */}
         <div className="mb-2">
           <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
             <Clock size={12} /> Horários de uso — arraste frascos da biblioteca para os horários
           </p>
-          <Timeline frascoMap={frascoMap} />
+          <Timeline frascoMap={frascoMap} onEditFrasco={onEditFrasco} />
         </div>
       </div>
 

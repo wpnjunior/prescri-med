@@ -4,14 +4,31 @@ import type { Category, Frasco, Ingredient } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '../types';
 import { useAppContext } from '../context';
 import { parseCompoundingText } from '../utils/parseText';
+import { useToast } from '../contexts/ToastContext';
 
 interface AddFrascoModalProps {
   editingFrasco?: Frasco | null;
   onClose: () => void;
 }
 
+// Todas as 25 categorias clínicas — em ordem semântica (não alfabética)
 const ALL_CATEGORIES: Category[] = [
-  'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro', 'hormonal', 'imunidade', 'outro'
+  // Bases estruturais
+  'base', 'jejum',
+  // Mente / Sistema nervoso
+  'sono', 'ansiedade', 'cerebro', 'disposicao',
+  // Endócrino
+  'tireoide', 'hormonal', 'libido', 'fertilidade',
+  // Metabolismo
+  'gordura', 'diabetes', 'dislipidemia',
+  // Sistemas
+  'intestino', 'imunidade', 'inflamacao',
+  // Ciclos
+  'detox', 'antiparasitario', 'desmame',
+  // Específicos
+  'lipoedema', 'pele', 'musculo', 'osso',
+  // Comerciais
+  'farmacia', 'outro',
 ];
 
 function generateId(): string {
@@ -38,6 +55,7 @@ const emptyForm = (): {
 
 export default function AddFrascoModal({ editingFrasco, onClose }: AddFrascoModalProps) {
   const { dispatch } = useAppContext();
+  const { showSaveToast } = useToast();
   const [rawText, setRawText] = useState('');
   const [form, setForm] = useState(emptyForm());
   const [error, setError] = useState('');
@@ -111,9 +129,43 @@ export default function AddFrascoModal({ editingFrasco, onClose }: AddFrascoModa
 
     if (editingFrasco) {
       dispatch({ type: 'UPDATE_FRASCO', payload: frasco });
+      showSaveToast({ type: 'frasco', name: frasco.name, action: 'atualizado' });
     } else {
       dispatch({ type: 'ADD_FRASCO', payload: frasco });
+      showSaveToast({ type: 'frasco', name: frasco.name, action: 'criado' });
     }
+    onClose();
+  };
+
+  // Salvar como NOVO frasco — preserva o original, cria uma cópia editada
+  const handleSaveAsNew = () => {
+    if (!form.name.trim()) {
+      setError('Nome do frasco é obrigatório.');
+      return;
+    }
+    if (form.ingredients.some(i => !i.name.trim())) {
+      setError('Todos os ingredientes precisam ter nome.');
+      return;
+    }
+
+    // Se o nome não foi alterado, sugerir adicionar "(cópia)"
+    const finalName = (editingFrasco && form.name.trim() === editingFrasco.name)
+      ? `${form.name.trim()} (cópia)`
+      : form.name.trim();
+
+    const novoFrasco: Frasco = {
+      id: generateId(),
+      name: finalName,
+      category: form.category,
+      ingredients: form.ingredients.filter(i => i.name.trim()),
+      posology: form.posology,
+      quantity: form.quantity,
+      duration: form.duration,
+      instructions: form.instructions,
+    };
+
+    dispatch({ type: 'ADD_FRASCO', payload: novoFrasco });
+    showSaveToast({ type: 'frasco', name: novoFrasco.name, action: 'duplicado' });
     onClose();
   };
 
@@ -281,19 +333,31 @@ export default function AddFrascoModal({ editingFrasco, onClose }: AddFrascoModa
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancelar
           </button>
-          <button
-            onClick={handleSave}
-            className="px-5 py-2 text-sm font-medium bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors"
-          >
-            {editingFrasco ? 'Salvar alterações' : 'Adicionar frasco'}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* "Salvar como novo" — só aparece quando está editando */}
+            {editingFrasco && (
+              <button
+                onClick={handleSaveAsNew}
+                className="px-4 py-2 text-sm font-medium bg-purple-100 text-purple-700 border border-purple-300 rounded-lg hover:bg-purple-200 transition-colors"
+                title="Cria um novo frasco com as alterações, preservando o original"
+              >
+                💾+ Salvar como novo
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              className="px-5 py-2 text-sm font-medium bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors"
+            >
+              {editingFrasco ? 'Salvar alterações' : 'Adicionar frasco'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -44,6 +44,28 @@ export const TIER_COLORS: Record<Tier, string> = {
   premium: '#EF4444',
 };
 
+// ─── SISTEMA DE 3 CAMADAS (Manual Mestre v2 — Dr. Wagner) ──────────────────
+// Toda prescrição: BASE (todo paciente) + MÓDULO (1, máx 2) + CICLO (opcional)
+export type Layer = 'base' | 'modulo' | 'ciclo';
+
+export const LAYER_LABELS: Record<Layer, string> = {
+  base: '🏛️ Base Essencial',
+  modulo: '🎯 Módulo-Alvo',
+  ciclo: '⏱️ Ciclo Temporário',
+};
+
+export const LAYER_COLORS: Record<Layer, string> = {
+  base: '#1E40AF',      // azul — fundação
+  modulo: '#22C55E',    // verde — foco do tratamento
+  ciclo: '#F97316',     // laranja — temporário
+};
+
+export const LAYER_DESCRIPTIONS: Record<Layer, string> = {
+  base: 'Uso contínuo. Todo paciente recebe a Base — é a fundação sobre a qual qualquer protocolo se constrói.',
+  modulo: 'Foco do tratamento. Escolher 1 (no máximo 2) por vez. Manual recomenda hierarquia clínica clara.',
+  ciclo: 'Tratamento temporário com começo, meio e fim definidos (Detox 21d / Desparasitação 14-21d / Pós-SIBO 30d).',
+};
+
 export type FrascoSource = 'manipulado' | 'farmacia' | 'growth' | 'doctorsfirst' | 'custom';
 
 export interface Frasco {
@@ -56,6 +78,9 @@ export interface Frasco {
   quantity: string;
   duration: string;
   instructions: string;
+  // ── Sistema de 3 camadas (Base / Módulo / Ciclo) ─────────────────────
+  layer?: Layer;
+  cycleDays?: number;  // só para ciclos (ex: 21 para detox, 14 para despara)
   // ── Premium / signature flag ──────────────────────────────────────────
   branded?: boolean;  // true = usa ingredientes patenteados (signature line)
   // ── Farmácia Sempre Viva fields ───────────────────────────────────────

@@ -6,7 +6,7 @@ import { syncPrescriptionsToFirestore, loadPrescriptionsFromFirestore, syncCusto
 import { SEED_FRASCOS, SEED_PROTOCOLS } from './data/seedData';
 
 // Bump this number whenever seed data changes to force refresh
-const SEED_VERSION = 10;
+const SEED_VERSION = 14;
 const SEED_VERSION_KEY = 'prescri_seed_version';
 
 const DEFAULT_DOCTOR = {

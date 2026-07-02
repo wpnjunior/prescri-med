@@ -21,7 +21,7 @@ const PRODUCT_CATEGORIES: Category[] = [
   'sono', 'ansiedade', 'tireoide', 'intestino', 'gordura', 'cerebro',
   'hormonal', 'imunidade', 'lipoedema', 'dislipidemia', 'diabetes',
   'disposicao', 'inflamacao', 'detox', 'antiparasitario', 'desmame',
-  'libido', 'fertilidade', 'musculo', 'osso', 'base', 'jejum', 'farmacia', 'outro',
+  'libido', 'fertilidade', 'musculo', 'osso', 'pele', 'base', 'jejum', 'farmacia', 'outro',
 ];
 
 type TabMode = 'link' | 'frasco' | 'manual';

@@ -7,6 +7,8 @@ import { LayoutList, BookMarked, FlaskConical, Eye } from 'lucide-react';
 import { AppProvider, useAppContext } from './context';
 import FrascoLibrary from './components/FrascoLibrary';
 import PrescriptionPanel from './components/PrescriptionPanel';
+import InstallPWAButton from './components/InstallPWAButton';
+import { ToastProvider } from './contexts/ToastContext';
 import AddFrascoModal from './components/AddFrascoModal';
 import DoctorSettingsModal from './components/DoctorSettingsModal';
 import FrascoManagerModal from './components/FrascoManagerModal';
@@ -172,7 +174,7 @@ function AppInner() {
             <FrascoLibrary onAddFrasco={handleOpenAdd} onEditFrasco={handleEditFrasco} onOpenFusion={handleOpenFusion} onOpenPanoramic={() => setPanoramicOpen(true)} onAddCustomProduct={() => setCustomProductOpen(true)} />
           </div>
           <div className="flex-1 overflow-hidden">
-            <PrescriptionPanel onOpenSettings={() => setSettingsOpen(true)} />
+            <PrescriptionPanel onOpenSettings={() => setSettingsOpen(true)} onEditFrasco={handleEditFrasco} />
           </div>
         </div>
       </div>
@@ -198,10 +200,17 @@ function AppInner() {
       <FrascoFusionModal open={fusionOpen} onClose={() => { setFusionOpen(false); setFusionPreSelected([]); }} preSelectedIds={fusionPreSelected} />
       {panoramicOpen && <PanoramicViewModal onClose={() => setPanoramicOpen(false)} onEditFrasco={handleEditFrasco} />}
       {customProductOpen && <AddCustomProductModal onClose={() => setCustomProductOpen(false)} />}
+      <InstallPWAButton />
     </DndContext>
   );
 }
 
 export default function App() {
-  return <AppProvider><AppInner /></AppProvider>;
+  return (
+    <AppProvider>
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
+    </AppProvider>
+  );
 }

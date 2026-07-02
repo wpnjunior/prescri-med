@@ -6,7 +6,9 @@ import { SUPER_FRASCOS } from './super-frascos';
 import { FRASCOS_MARLETE_BRANDED } from './frascos-marlete';
 import { FRASCOS_ESPECIALIZADOS } from './frascos-especializados';
 import { FRASCOS_MODULOS } from './frascos-modulos';
+import { FRASCOS_COMPOSICOES_NOVAS } from './frascos-composicoes-novas';
 import { PROTOCOLOS_OFICIAIS } from './protocolos-novos';
+import { tagLayers } from '../utils/layerDetector';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FRASCOS — 97 base + 300 categorias (frascos-group1..4)
@@ -1216,15 +1218,42 @@ const BASE_FRASCOS: Frasco[] = [
   },
 ];
 
-export const SEED_FRASCOS: Frasco[] = [
-  ...SUPER_FRASCOS,
+// ── IDs de super-frascos a EXCLUIR (tinham 23-88 ingredientes cada) ───────
+const EXCLUDED_SUPER_FRASCO_IDS = new Set([
+  'super-jejum',          // 77
+  'super-fertilidade',    // 88
+  'super-musculo',        // 61
+  'super-cerebro',        // 60
+  'super-osso',           // 57
+  'super-disposicao',     // 56
+  'super-detox',          // 56
+  'super-inflamacao',     // 54
+  'super-ansiedade',      // 53
+  'super-diabetes',       // 53
+  'super-dislipidemia',   // 52
+  'super-imunidade',      // 52
+  'super-libido',         // 51
+  'super-tireoide',       // 49
+  'super-intestino',      // 49
+  'super-lipoedema',      // 48
+  'super-desmame',        // 48
+  'super-sono',           // 45
+  'super-gordura',        // 45
+  'super-antiparasitario', // 43
+  'super-base',           // 23
+]);
+
+// Auto-classifica + filtra os super-frascos excluídos
+export const SEED_FRASCOS: Frasco[] = tagLayers([
+  ...SUPER_FRASCOS.filter(f => !EXCLUDED_SUPER_FRASCO_IDS.has(f.id)),
   ...FRASCOS_MARLETE_BRANDED,
   ...FRASCOS_ESPECIALIZADOS,
   ...FRASCOS_MODULOS,
+  ...FRASCOS_COMPOSICOES_NOVAS,
   ...FRASCOS_FARMACIA,
   ...FRASCOS_GROWTH,
   ...FRASCOS_DOCTORSFIRST,
-];
+]);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROTOCOLOS — 1 por condição, 3 tomadas diárias
@@ -1486,4 +1515,8 @@ export const SEED_PROTOCOLS: Protocol[] = [
   // 13 numerados + 4 Marlete + Base Essencial + 6 especializados = 24 total
   // ═════════════════════════════════════════════════════════════════════════
   ...PROTOCOLOS_OFICIAIS,
-];
+]
+  // Filtra protocolos que dependem de super-frascos excluídos
+  // (caso contrário, ao aplicar viriam com slots vazios)
+  .filter(p => !p.entries.some(e => EXCLUDED_SUPER_FRASCO_IDS.has(e.frascoId)));
+
