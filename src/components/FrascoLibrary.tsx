@@ -410,7 +410,7 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
               </>
             )}
           </div>
-        ) : (
+        ) : activeCategory ? (
           <div className="grid grid-cols-1 gap-2">
             {filtered.map(frasco => (
               <FrascoCard
@@ -421,6 +421,38 @@ export default function FrascoLibrary({ onAddFrasco, onEditFrasco, onOpenFusion,
                 onOpenFusion={onOpenFusion}
               />
             ))}
+          </div>
+        ) : (
+          /* Sem categoria selecionada → separado em GRUPOS por categoria */
+          <div className="space-y-5">
+            {ALL_CATEGORIES.filter(cat => filtered.some(f => f.category === cat)).map(cat => {
+              const grupo = filtered.filter(f => f.category === cat);
+              return (
+                <div key={cat}>
+                  <div className="sticky top-0 z-10 flex items-center gap-2 mb-2 py-1.5 bg-white/95 backdrop-blur-sm">
+                    <span
+                      className="inline-flex items-center text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm"
+                      style={{ backgroundColor: CATEGORY_COLORS[cat] }}
+                    >
+                      {CATEGORY_LABELS[cat]}
+                    </span>
+                    <span className="text-xs text-gray-400 font-semibold">{grupo.length}</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {grupo.map(frasco => (
+                      <FrascoCard
+                        key={frasco.id}
+                        frasco={frasco}
+                        onEdit={onEditFrasco}
+                        onDelete={handleDelete}
+                        onOpenFusion={onOpenFusion}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
